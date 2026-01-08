@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Quoc MEP Universal</Name>
+    <Assembly>Quoc_MEP_Loader.dll</Assembly>
+    <AddInId>AD8D446D-A204-48BF-A983-C931DD3C066F</AddInId>
+    <FullClassName>Quoc_MEP.UniversalLoader</FullClassName>
+    <VendorId>QUOC</VendorId>
+    <VendorDescription>Quoc MEP Tools</VendorDescription>
+  </AddIn>
+</RevitAddIns>
