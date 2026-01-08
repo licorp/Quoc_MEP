@@ -142,11 +142,11 @@
       <HintPath>packages\WPF-UI.Abstractions.4.0.3\lib\net472\Wpf.Ui.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="ricaun.Revit.UI.0.8.0">
-      <HintPath>packages\ricaun.Revit.UI.0.8.0\lib\net48\ricaun.Revit.UI.0.8.0.dll</HintPath>
+      <HintPath>Lib\ricaun\ricaun.Revit.UI.0.8.0.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ricaun.Revit.UI.StatusBar.1.0.0">
-      <HintPath>packages\ricaun.Revit.UI.StatusBar.1.0.0\lib\net47\ricaun.Revit.UI.StatusBar.1.0.0.dll</HintPath>
+      <HintPath>Lib\ricaun\ricaun.Revit.UI.StatusBar.1.0.0.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
