@@ -1,0 +1,308 @@
+name: Build All Revit Versions
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Cho phép chạy thủ công
+
+jobs:
+  build:
+    name: Build Revit ${{ matrix.revit-version }}
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        revit-version: ['2020', '2021', '2022', '2023', '2024', '2025', '2026']
+        configuration: ['Release']
+      fail-fast: false  # Tiếp tục build các version khác nếu 1 version fail
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+    
+    - name: Restore NuGet packages
+      working-directory: Quoc_Mep
+      run: nuget restore Quoc_MEP.csproj -PackagesDirectory packages
+    
+    - name: Build for Revit ${{ matrix.revit-version }}
+      working-directory: Quoc_Mep
+      run: |
+        msbuild Quoc_MEP.csproj `
+          /t:Rebuild `
+          /p:RevitVersion=${{ matrix.revit-version }} `
+          /p:Configuration=${{ matrix.configuration }} `
+          /p:Platform=AnyCPU `
+          /maxcpucount `
+          /verbosity:minimal
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Quoc_MEP-Revit${{ matrix.revit-version }}-${{ matrix.configuration }}
+        path: |
+          Quoc_Mep/bin/${{ matrix.configuration }}/Revit${{ matrix.revit-version }}/**/*
+          Quoc_Mep/bin/${{ matrix.configuration }}/**/*.dll
+          Quoc_Mep/bin/${{ matrix.configuration }}/**/*.addin
+        retention-days: 30
+        if-no-files-found: warn
+
+  # Build Loader (minimal, chạy trên tất cả versions)
+  build-loader:
+    name: Build Universal Loader
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+    
+    - name: Restore NuGet packages
+      working-directory: Quoc_Mep
+      run: nuget restore Quoc_MEP.csproj -PackagesDirectory packages
+    
+    - name: Build Loader (Revit 2024 base)
+      working-directory: Quoc_Mep
+      run: |
+        msbuild Quoc_MEP.csproj `
+          /t:Rebuild `
+          /p:RevitVersion=2024 `
+          /p:Configuration=Release `
+          /p:Platform=AnyCPU `
+          /p:OutputPath=bin\Release\Loader\ `
+          /maxcpucount `
+          /verbosity:minimal
+    
+    - name: Upload loader artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Quoc_MEP_Loader
+        path: |
+          Quoc_Mep/bin/Release/Loader/Quoc_MEP_Loader.dll
+          Quoc_Mep/Quoc_MEP_Universal.addin
+        retention-days: 30
+
+  # Job riêng để tổng hợp tất cả artifacts
+  package-all:
+    name: Package Universal Installation
+    needs: [build, build-loader]
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code (for scripts)
+      uses: actions/checkout@v4
+    
+    - name: Download all version artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Create universal package structure
+      shell: pwsh
+      run: |
+        $packageDir = "Quoc_MEP_Universal"
+        New-Item -ItemType Directory -Force -Path $packageDir
+        
+        # Copy loader files vào thư mục gốc
+        if (Test-Path "artifacts\Quoc_MEP_Loader") {
+          Copy-Item "artifacts\Quoc_MEP_Loader\*" -Destination $packageDir -Force
+        }
+        
+        # Copy từng phiên bản vào thư mục con
+        $versions = @("2020", "2021", "2022", "2023", "2024", "2025", "2026")
+        foreach ($ver in $versions) {
+          $artifactName = "Quoc_MEP-Revit$ver-Release"
+          $versionDir = "$packageDir\Revit$ver"
+          
+          if (Test-Path "artifacts\$artifactName") {
+            New-Item -ItemType Directory -Force -Path $versionDir
+            
+            # Copy DLL và dependencies
+            Get-ChildItem -Path "artifacts\$artifactName" -Recurse -File | Where-Object {
+              $_.Extension -eq ".dll" -or $_.Extension -eq ".pdb"
+            } | ForEach-Object {
+              Copy-Item $_.FullName -Destination $versionDir -Force
+            }
+            
+            # Copy Resources folder nếu có
+            $resourcesPath = "artifacts\$artifactName\Resources"
+            if (Test-Path $resourcesPath) {
+              Copy-Item $resourcesPath -Destination "$versionDir\Resources" -Recurse -Force
+            }
+            
+            Write-Host "✅ Packaged Revit $ver"
+          } else {
+            Write-Host "⚠️  Revit $ver artifacts not found"
+          }
+        }
+        
+        # Tạo README chi tiết
+        @"
+        # Quoc MEP Add-in - Universal Installation
+        
+        Built on: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        
+        ## 🚀 Cài đặt đơn giản - Chỉ 3 bước!
+        
+        ### Bước 1: Copy toàn bộ thư mục
+        Copy toàn bộ thư mục này vào:
+        
+            %APPDATA%\Autodesk\Revit\Addins\
+        
+        ### Bước 2: Đổi tên thư mục
+        Đổi tên thư mục thành tên phiên bản Revit của bạn:
+        - Revit 2020 → 2020
+        - Revit 2021 → 2021
+        - Revit 2022 → 2022
+        - Revit 2023 → 2023
+        - Revit 2024 → 2024
+        - Revit 2025 → 2025
+        - Revit 2026 → 2026
+        
+        ### Bước 3: Restart Revit
+        Khởi động lại Revit và tận hưởng!
+        
+        ## 📁 Cấu trúc thư mục sau khi cài:
+        
+        %APPDATA%\Autodesk\Revit\Addins\2024\
+        ├── Quoc_MEP_Universal.addin    ← File addin chính
+        ├── Quoc_MEP_Loader.dll         ← Loader tự động
+        └── Revit2024\                  ← DLL cho version này
+            ├── Quoc_MEP.dll
+            ├── Resources\
+            └── (các dependencies khác)
+        
+        ## 🎯 Cách hoạt động:
+        
+        1. File .addin load Quoc_MEP_Loader.dll
+        2. Loader tự động detect phiên bản Revit
+        3. Load đúng DLL từ thư mục Revit{Version}
+        4. Add-in chạy bình thường!
+        
+        ## ✨ Tính năng:
+        
+        - ✅ Tự động detect phiên bản Revit
+        - ✅ 1 lần cài đặt cho tất cả versions
+        - ✅ Dễ dàng update (chỉ replace files)
+        - ✅ Hỗ trợ Revit 2020-2026
+        
+        ## 📦 Included Versions:
+        - Revit 2020 (.NET 4.8)
+        - Revit 2021 (.NET 4.8)
+        - Revit 2022 (.NET 4.8)
+        - Revit 2023 (.NET 4.8)
+        - Revit 2024 (.NET 4.8)
+        - Revit 2025 (.NET 8.0)
+        - Revit 2026 (.NET 8.0)
+        
+        ## 🆘 Troubleshooting:
+        
+        Nếu gặp lỗi, kiểm tra:
+        1. File Quoc_MEP_Universal.addin ở đúng vị trí
+        2. Thư mục Revit{Version} tồn tại
+        3. File Quoc_MEP.dll trong thư mục version
+        
+        "@ | Out-File -FilePath "$packageDir\README.txt" -Encoding UTF8
+        
+        # Tạo install script tự động
+        @"
+        @echo off
+        echo ================================================
+        echo   Quoc MEP Universal Installer
+        echo ================================================
+        echo.
+        
+        set "ADDIN_PATH=%APPDATA%\Autodesk\Revit\Addins"
+        
+        echo Chon phien ban Revit cua ban:
+        echo 1. Revit 2020
+        echo 2. Revit 2021
+        echo 3. Revit 2022
+        echo 4. Revit 2023
+        echo 5. Revit 2024
+        echo 6. Revit 2025
+        echo 7. Revit 2026
+        echo.
+        
+        set /p choice="Nhap so (1-7): "
+        
+        if "%choice%"=="1" set "VERSION=2020"
+        if "%choice%"=="2" set "VERSION=2021"
+        if "%choice%"=="3" set "VERSION=2022"
+        if "%choice%"=="4" set "VERSION=2023"
+        if "%choice%"=="5" set "VERSION=2024"
+        if "%choice%"=="6" set "VERSION=2025"
+        if "%choice%"=="7" set "VERSION=2026"
+        
+        if not defined VERSION (
+            echo Lua chon khong hop le!
+            pause
+            exit /b 1
+        )
+        
+        set "DEST=%ADDIN_PATH%\%VERSION%"
+        
+        echo.
+        echo Dang cai dat vao: %DEST%
+        echo.
+        
+        if not exist "%DEST%" mkdir "%DEST%"
+        
+        xcopy /Y /E /I "%~dp0*" "%DEST%\"
+        
+        echo.
+        echo ================================================
+        echo   Cai dat thanh cong!
+        echo ================================================
+        echo.
+        echo Khoi dong lai Revit %VERSION% de su dung.
+        echo.
+        pause
+        "@ | Out-File -FilePath "$packageDir\INSTALL.bat" -Encoding ASCII
+    
+    - name: Compress package
+      shell: pwsh
+      run: |
+        Compress-Archive -Path "Quoc_MEP_Universal\*" -DestinationPath "Quoc_MEP_Universal.zip" -Force
+    
+    - name: Upload universal package
+      uses: actions/upload-artifact@v4
+      with:
+        name: Quoc_MEP_Universal_Package
+        path: Quoc_MEP_Universal.zip
+        retention-days: 90
+
+  # Tạo release nếu có tag
+  create-release:
+    name: Create Release
+    needs: package-all
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Download package
+      uses: actions/download-artifact@v4
+      with:
+        name: Quoc_MEP_Universal_Package
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: Quoc_MEP_Universal.zip
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
