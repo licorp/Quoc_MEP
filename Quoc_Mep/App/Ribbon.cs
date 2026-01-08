@@ -129,9 +129,9 @@ namespace Quoc_MEP
             PushButtonData move_Connect_Align = new PushButtonData("move_Connect_Align", "Move Connect" + '\n' + "Align", path, nameSpace + "MoveConnectCommand");
             MyPush(panel, move_Connect_Align, "pipe.png", "Click on a destination MEP family, and then on an MEP family you'd like to move. The second family is moved so that the two closest connectors meet, align and connect.");
 
-            //place_Family
-            PushButtonData place_Family = new PushButtonData("place_Family", "Place Family", path, nameSpace + "PlaceFamilyCmd");
-            MyPush(panel, place_Family, "place.png", "Place family from location of block in file link CAD.");
+            // ⚠️ place_Family - Disabled (requires obsolete CAD API)
+            // PushButtonData place_Family = new PushButtonData("place_Family", "Place Family", path, nameSpace + "PlaceFamilyCmd");
+            // MyPush(panel, place_Family, "place.png", "Place family from location of block in file link CAD.");
 
             //draw_Pipe
             PushButtonData draw_Pipe = new PushButtonData("draw_Pipe", "Draw Pipe", path, nameSpace + "DrawPipe");

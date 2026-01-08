@@ -194,11 +194,12 @@
     -->
     <Compile Include="Lib\MEPLib.cs" />
     <Compile Include="Place Support\PlaceSupportCmd.cs" />
-    <Compile Include="PlaceFamily\PlaceFamilyCmd.cs" />
+    <!-- ⚠️ PlaceFamily feature disabled - requires obsolete API methods -->
+    <!-- <Compile Include="PlaceFamily\PlaceFamilyCmd.cs" /> -->
     <Compile Include="PlaceFamily\PlaceFamilyUtils.cs" />
-    <Compile Include="PlaceFamily\PlaceFamilyWindow.xaml.cs">
+    <!-- <Compile Include="PlaceFamily\PlaceFamilyWindow.xaml.cs">
       <DependentUpon>PlaceFamilyWindow.xaml</DependentUpon>
-    </Compile>
+    </Compile> -->
     <Compile Include="Progressbar\ProgressBarView.xaml.cs">
       <DependentUpon>ProgressBarView.xaml</DependentUpon>
     </Compile>
@@ -347,10 +348,12 @@
       <SubType>Designer</SubType>
     </Page>
     -->
+    <!-- ⚠️ PlaceFamily XAML disabled
     <Page Include="PlaceFamily\PlaceFamilyWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    -->
     <Page Include="Progressbar\ProgressBarView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
