@@ -28,9 +28,11 @@ jobs:
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
     
-    - name: Restore NuGet packages
+    - name: Restore NuGet packages  
       working-directory: Quoc_Mep
-      run: nuget restore Quoc_MEP.csproj -PackagesDirectory packages
+      run: |
+        nuget restore packages.config -PackagesDirectory packages
+        nuget restore Quoc_MEP_Main.sln
     
     - name: Build for Revit ${{ matrix.revit-version }}
       working-directory: Quoc_Mep
@@ -71,7 +73,9 @@ jobs:
     
     - name: Restore NuGet packages
       working-directory: Quoc_Mep
-      run: nuget restore Quoc_MEP.csproj -PackagesDirectory packages
+      run: |
+        nuget restore packages.config -PackagesDirectory packages
+        nuget restore Quoc_MEP_Main.sln
     
     - name: Build Loader (Revit 2024 base)
       working-directory: Quoc_Mep
