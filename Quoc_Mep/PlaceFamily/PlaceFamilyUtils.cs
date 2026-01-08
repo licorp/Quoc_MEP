@@ -21,7 +21,11 @@ namespace Quoc_MEP.PlaceFamily
                 if (geometryOb != null && geometryOb is GeometryInstance)
                 {
                     GeometryInstance geometryInstance = (GeometryInstance)geometryOb;
+#if REVIT2020 || REVIT2021
                     string name = geometryInstance.Symbol.Name.Replace(fileName, "");
+#else
+                    string name = geometryInstance.GetSymbolGeometry()?.GetType().Name?.Replace(fileName, "") ?? "";
+#endif
                     listName.Add(name);
                 }
             }
@@ -134,7 +138,11 @@ namespace Quoc_MEP.PlaceFamily
                 if (geoOb != null && geoOb is GeometryInstance)
                 {
                     GeometryInstance geoIns = (GeometryInstance)geoOb;
+#if REVIT2020 || REVIT2021
                     string name = geoIns.Symbol.Name.Replace(fileName, "");
+#else
+                    string name = geoIns.GetSymbolGeometry()?.GetType().Name?.Replace(fileName, "") ?? "";
+#endif
                     if (name == blockName)
                     {
                         listBlocks.Add(geoIns);
