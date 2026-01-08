@@ -10,6 +10,7 @@ namespace Quoc_MEP.PlaceFamily
     public class PlaceFamilyUtils
     {
 
+        /* ⚠️ OBSOLETE METHOD - Commented out due to API compatibility issues
         [Obsolete]
         public static List<string> GetListBlockCad(CADLinkType cadLinkType)
         {
@@ -33,6 +34,7 @@ namespace Quoc_MEP.PlaceFamily
             listName.Sort();
             return listName.Distinct().ToList();
         }
+        */
 
         public static List<string> GetListFamily(Document doc, FamilyInstance instance)
         {
@@ -126,6 +128,7 @@ namespace Quoc_MEP.PlaceFamily
             return familySymbol;
         }
 
+        /* ⚠️ OBSOLETE METHOD - Commented out due to API compatibility issues
         [Obsolete]
         public static List<GeometryInstance> GetListBlockCadByName(CADLinkType cadLinkType, string blockName)
         {
@@ -151,6 +154,7 @@ namespace Quoc_MEP.PlaceFamily
             }
             return listBlocks;
         }
+        */
 
     }
 }
