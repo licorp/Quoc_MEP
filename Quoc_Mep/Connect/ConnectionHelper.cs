@@ -450,5 +450,138 @@ namespace Quoc_MEP
                 return false;
             }
         }
+
+        /// <summary>
+        /// Move, align and connect with strict alignment checking
+        /// </summary>
+        public static bool MoveAlignAndConnect(Document doc, Element sourceElement, Element destElement)
+        {
+            try
+            {
+                using (Transaction trans = new Transaction(doc, "Move, Align and Connect"))
+                {
+                    trans.Start();
+
+                    // Unpin if needed
+                    bool wasSourcePinned = UnpinElementIfNeeded(sourceElement);
+
+                    // Get nearest available connectors
+                    Connector sourceConnector = GetNearestAvailableConnector(sourceElement, destElement);
+                    Connector destConnector = GetNearestAvailableConnector(destElement, sourceElement);
+
+                    if (sourceConnector == null || destConnector == null)
+                    {
+                        trans.RollBack();
+                        return false;
+                    }
+
+                    // Check compatibility before moving
+                    if (!AreConnectorsCompatible(sourceConnector, destConnector))
+                    {
+                        trans.RollBack();
+                        return false;
+                    }
+
+                    // Calculate movement vector
+                    XYZ sourcePoint = sourceConnector.Origin;
+                    XYZ destPoint = destConnector.Origin;
+                    XYZ moveVector = destPoint - sourcePoint;
+
+                    // Move source element
+                    ElementTransformUtils.MoveElement(doc, sourceElement.Id, moveVector);
+
+                    // After move, need to refresh connector references
+                    ConnectorManager srcConnMgr = GetConnectorManager(sourceElement);
+                    if (srcConnMgr == null)
+                    {
+                        trans.RollBack();
+                        return false;
+                    }
+
+                    // Find moved connector (same index/type as before)
+                    Connector movedConnector = null;
+                    foreach (Connector conn in srcConnMgr.Connectors)
+                    {
+                        if (conn.ConnectorType == sourceConnector.ConnectorType)
+                        {
+                            double distance = conn.Origin.DistanceTo(destConnector.Origin);
+                            if (distance < 0.01) // Very close tolerance
+                            {
+                                movedConnector = conn;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (movedConnector == null)
+                    {
+                        trans.RollBack();
+                        return false;
+                    }
+
+                    // Check alignment (direction vectors should be opposite or nearly opposite)
+                    XYZ srcDirection = movedConnector.CoordinateSystem.BasisZ;
+                    XYZ destDirection = destConnector.CoordinateSystem.BasisZ;
+                    double dotProduct = srcDirection.DotProduct(destDirection);
+
+                    // If not aligned (dot product should be close to -1 for opposite directions)
+                    if (dotProduct > -0.9)
+                    {
+                        // Try to rotate source element to align
+                        XYZ rotationAxis = XYZ.BasisZ; // Assuming vertical rotation
+                        XYZ rotationPoint = movedConnector.Origin;
+                        
+                        // Calculate rotation angle needed
+                        double angle = Math.PI; // 180 degrees
+                        
+                        // Rotate element
+                        Line rotationLine = Line.CreateBound(rotationPoint, rotationPoint + rotationAxis);
+                        ElementTransformUtils.RotateElement(doc, sourceElement.Id, rotationLine, angle);
+
+                        // Refresh connector after rotation
+                        srcConnMgr = GetConnectorManager(sourceElement);
+                        if (srcConnMgr == null)
+                        {
+                            trans.RollBack();
+                            return false;
+                        }
+
+                        // Find connector again after rotation
+                        movedConnector = null;
+                        foreach (Connector conn in srcConnMgr.Connectors)
+                        {
+                            double distance = conn.Origin.DistanceTo(destConnector.Origin);
+                            if (distance < 0.01)
+                            {
+                                movedConnector = conn;
+                                break;
+                            }
+                        }
+
+                        if (movedConnector == null)
+                        {
+                            trans.RollBack();
+                            return false;
+                        }
+                    }
+
+                    // Connect the connectors
+                    movedConnector.ConnectTo(destConnector);
+
+                    // Restore pin state
+                    if (wasSourcePinned)
+                    {
+                        sourceElement.Pinned = true;
+                    }
+
+                    trans.Commit();
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

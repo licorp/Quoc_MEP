@@ -125,13 +125,54 @@ namespace Quoc_MEP
 
         private void Modify_Tool (RibbonPanel panel)
         {
-            //move_Connect_Align
-            PushButtonData move_Connect_Align = new PushButtonData("move_Connect_Align", "Move Connect" + '\n' + "Align", path, nameSpace + "MoveConnectCommand");
-            MyPush(panel, move_Connect_Align, "pipe.png", "Click on a destination MEP family, and then on an MEP family you'd like to move. The second family is moved so that the two closest connectors meet, align and connect.");
+            // ===== CONNECT PULLDOWN BUTTON =====
+            // Tạo PulldownButton cho các lệnh Connect
+            PulldownButtonData connectPulldownData = new PulldownButtonData("connectPulldown", "Connect");
+            PulldownButton connectPulldown = panel.AddItem(connectPulldownData) as PulldownButton;
+            connectPulldown.ToolTip = "MEP Connection Tools";
+            
+            // Set icon cho pulldown button
+            var connectIcon = LoadImageFromFile("pipe.png");
+            if (connectIcon != null)
+                connectPulldown.LargeImage = connectIcon;
 
-            // ⚠️ place_Family - Disabled (requires obsolete CAD API)
-            // PushButtonData place_Family = new PushButtonData("place_Family", "Place Family", path, nameSpace + "PlaceFamilyCmd");
-            // MyPush(panel, place_Family, "place.png", "Place family from location of block in file link CAD.");
+            // 1. Move Connect
+            PushButtonData moveConnectBtn = new PushButtonData(
+                "moveConnect", 
+                "Move Connect", 
+                path, 
+                nameSpace + "MoveConnectCommand");
+            PushButton moveConnect = connectPulldown.AddPushButton(moveConnectBtn);
+            moveConnect.ToolTip = "Move and connect two MEP elements";
+            var moveConnectIcon = LoadImageFromFile("pipe.png");
+            if (moveConnectIcon != null)
+                moveConnect.LargeImage = moveConnectIcon;
+
+            // 2. Move Align Connect
+            PushButtonData moveAlignConnectBtn = new PushButtonData(
+                "moveAlignConnect", 
+                "Move Align Connect", 
+                path, 
+                nameSpace + "MoveAlignConnectCommand");
+            PushButton moveAlignConnect = connectPulldown.AddPushButton(moveAlignConnectBtn);
+            moveAlignConnect.ToolTip = "Move, align and connect two MEP elements with alignment check";
+            var moveAlignIcon = LoadImageFromFile("pipe.png");
+            if (moveAlignIcon != null)
+                moveAlignConnect.LargeImage = moveAlignIcon;
+
+            // 3. Disconnect
+            PushButtonData disconnectBtn = new PushButtonData(
+                "disconnect", 
+                "Disconnect", 
+                path, 
+                nameSpace + "DisconnectCommand");
+            PushButton disconnect = connectPulldown.AddPushButton(disconnectBtn);
+            disconnect.ToolTip = "Disconnect all connectors from selected MEP element";
+            var disconnectIcon = LoadImageFromFile("split.png");
+            if (disconnectIcon != null)
+                disconnect.LargeImage = disconnectIcon;
+
+            // ===== OTHER TOOLS =====
 
             //draw_Pipe
             PushButtonData draw_Pipe = new PushButtonData("draw_Pipe", "Draw Pipe", path, nameSpace + "DrawPipe");
@@ -211,8 +252,15 @@ namespace Quoc_MEP
             // Lưu reference để dùng sau
             _uiCtrlApp = application;
 
-            //tạo tab có tên là "Quoc_MEP"
-            application.CreateRibbonTab(tabName);
+            //tạo tab có tên là "Quoc_MEP" - chỉ tạo nếu chưa tồn tại
+            try
+            {
+                application.CreateRibbonTab(tabName);
+            }
+            catch (Autodesk.Revit.Exceptions.ArgumentException)
+            {
+                // Tab đã tồn tại, bỏ qua
+            }
 
             //tạo panel
             RibbonPanel ModifyPanel = application.CreateRibbonPanel(tabName, "Modify");
