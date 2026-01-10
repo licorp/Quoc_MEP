@@ -108,6 +108,30 @@ jobs:
     - name: Checkout code (for scripts)
       uses: actions/checkout@v4
     
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+    
+    - name: Restore NuGet packages
+      working-directory: Quoc_Mep
+      run: |
+        nuget restore packages.config -PackagesDirectory packages
+        nuget restore Quoc_MEP_Main.sln
+    
+    - name: Generate PackageContents.xml and .addin files
+      shell: pwsh
+      working-directory: Quoc_Mep
+      run: |
+        Write-Host "🎨 Generating package files using Autodesk.PackageBuilder..." -ForegroundColor Cyan
+        .\Generate-PackageFiles.ps1 -OutputDir "..\GeneratedFiles" -Version "1.0.0"
+    
     - name: Download all version artifacts
       uses: actions/download-artifact@v4
       with:
@@ -118,6 +142,15 @@ jobs:
       run: |
         $packageDir = "Quoc_MEP_Universal"
         New-Item -ItemType Directory -Force -Path $packageDir
+        
+        # Copy generated package files from Autodesk.PackageBuilder
+        Write-Host "📦 Copying generated PackageContents.xml..." -ForegroundColor Cyan
+        if (Test-Path "GeneratedFiles\PackageContents.xml") {
+          Copy-Item "GeneratedFiles\PackageContents.xml" -Destination $packageDir -Force
+          Write-Host "✅ PackageContents.xml copied" -ForegroundColor Green
+        } else {
+          Write-Host "⚠️  PackageContents.xml not found in GeneratedFiles" -ForegroundColor Yellow
+        }
         
         # Copy loader files vào thư mục gốc
         if (Test-Path "artifacts\Quoc_MEP_Loader") {
@@ -144,6 +177,11 @@ jobs:
             $resourcesPath = "artifacts\$artifactName\Resources"
             if (Test-Path $resourcesPath) {
               Copy-Item $resourcesPath -Destination "$versionDir\Resources" -Recurse -Force
+            }
+            
+            # Copy generated .addin file for this version
+            if (Test-Path "GeneratedFiles\Quoc_MEP.addin") {
+              Copy-Item "GeneratedFiles\Quoc_MEP.addin" -Destination $versionDir -Force
             }
             
             Write-Host "✅ Packaged Revit $ver"

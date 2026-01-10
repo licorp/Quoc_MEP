@@ -51,6 +51,7 @@
   <!-- ============================================ -->
   <!-- Packages for Revit 2020-2024 (.NET Framework 4.8) -->
   <ItemGroup Condition="'$(RevitVersion)' == '2020' Or '$(RevitVersion)' == '2021' Or '$(RevitVersion)' == '2022' Or '$(RevitVersion)' == '2023' Or '$(RevitVersion)' == '2024'">
+    <PackageReference Include="Autodesk.PackageBuilder" Version="2.0.2" />
     <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
     <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
     <PackageReference Include="Nice3point.Revit.Api.AdWindows" Version="$(RevitVersion).*" />
