@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Quoc MEP - Shared Ribbon</Name>
+    <Assembly>Quoc_MEP.RibbonHost.dll</Assembly>
+    <AddInId>12345678-1234-1234-1234-123456789ABC</AddInId>
+    <FullClassName>Quoc_MEP.RibbonHost.Application</FullClassName>
+    <VendorId>QUOC</VendorId>
+    <VendorDescription>Quoc MEP Tools</VendorDescription>
+  </AddIn>
+</RevitAddIns>

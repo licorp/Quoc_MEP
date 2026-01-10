@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{AD8D446D-A204-48BF-A983-C931DD3C066F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Quoc_MEP</RootNamespace>
+    <AssemblyName>Quoc_MEP</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <!-- Nice3point Auto-Deploy Configuration -->
+    <RevitVersion>2023</RevitVersion>
+    <GenerateAddinFile>False</GenerateAddinFile>
+    <CopyAddinsToRevit>True</CopyAddinsToRevit>
+    <!-- ⚡ PUBLISH: Create complete package with all dependencies -->
+    <PublishRevitAddin>true</PublishRevitAddin>
+    <PublishDir>$(OutputPath)publish\</PublishDir>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ExcelDataReader, Version=3.8.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>packages\ExcelDataReader.3.8.0\lib\net462\ExcelDataReader.dll</HintPath>
+    </Reference>
+    <Reference Include="ExcelDataReader.DataSet, Version=3.8.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>packages\ExcelDataReader.DataSet.3.8.0\lib\net462\ExcelDataReader.DataSet.dll</HintPath>
+    </Reference>
+    <Reference Include="JetBrains.Annotations, Version=2022.1.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
+      <HintPath>packages\JetBrains.Annotations.2025.2.2\lib\net20\JetBrains.Annotations.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Interop.Excel, Version=16.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Office.Interop.Excel.16.0.18925.20022\lib\net40\Microsoft.Office.Interop.Excel.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Nice3point.Revit.Extensions, Version=2023.1.2.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>packages\Nice3point.Revit.Extensions.2023.1.2\lib\net48\Nice3point.Revit.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Nice3point.Revit.Toolkit, Version=2023.0.6.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>packages\Nice3point.Revit.Toolkit.2023.0.6\lib\net48\Nice3point.Revit.Toolkit.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="AdWindows">
+      <HintPath>C:\Program Files\Autodesk\Revit 2023\AdWindows.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitAPI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2023\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2023\RevitAPIUI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Reactive, Version=5.0.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
+      <HintPath>packages\System.Reactive.5.0.0\lib\net472\System.Reactive.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="VitalElement.DataVirtualization, Version=0.0.40.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\VitalElement.DataVirtualization.0.0.40\lib\netstandard2.0\VitalElement.DataVirtualization.dll</HintPath>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="Wpf.Ui, Version=4.0.0.0, Culture=neutral, PublicKeyToken=11f9f5cc97b3ffd6, processorArchitecture=MSIL">
+      <HintPath>packages\WPF-UI.4.0.3\lib\net472\Wpf.Ui.dll</HintPath>
+    </Reference>
+    <Reference Include="Wpf.Ui.Abstractions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=11f9f5cc97b3ffd6, processorArchitecture=MSIL">
+      <HintPath>packages\WPF-UI.Abstractions.4.0.3\lib\net472\Wpf.Ui.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="ricaun.Revit.UI.0.8.0">
+      <HintPath>packages\ricaun.Revit.UI.0.8.0\lib\net48\ricaun.Revit.UI.0.8.0.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ricaun.Revit.UI.StatusBar.1.0.0">
+      <HintPath>packages\ricaun.Revit.UI.StatusBar.1.0.0\lib\net47\ricaun.Revit.UI.StatusBar.1.0.0.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="EPPlus, Version=6.2.4.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>packages\EPPlus.6.2.4\lib\net462\EPPlus.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App\Class1.cs" />
+    <Compile Include="App\Ribbon.cs" />
+    <Compile Include="Change Length\ChangeLengthcmd.cs" />
+    <Compile Include="Change Length\ChangeLengthLogger.cs" />
+    <Compile Include="Change Length\PipeLengthWindow.xaml.cs">
+      <DependentUpon>PipeLengthWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Connect\ConnectionHelper.cs" />
+    <Compile Include="Connect\MoveConnectCommand.cs" />
+    <Compile Include="Connect\SelectionHelper.cs" />
+    <Compile Include="Con_Align\Con_Align.cs" />
+    <Compile Include="DockablePanel\ChangeLengthEventHandler.cs" />
+    <Compile Include="DockablePanel\DockablePaneCreatorService.cs" />
+    <Compile Include="DockablePanel\PanelDataBridge.cs" />
+    <Compile Include="DockablePanel\RevitContext.cs" />
+    <Compile Include="DockablePanel\RotateEventHandler.cs" />
+    <Compile Include="DockablePanel\MEPToolsPanel.xaml.cs">
+      <DependentUpon>MEPToolsPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DockablePanel\MEPToolsPanelLogger.cs" />
+    <Compile Include="DockablePanel\ShowDockablePanelCommand.cs" />
+    <Compile Include="DrawPipe\DrawPipe.cs" />
+    <Compile Include="Lib\MEPLib.cs" />
+    <Compile Include="Place Support\PlaceSupportCmd.cs" />
+    <Compile Include="PlaceFamily\PlaceFamilyCmd.cs" />
+    <Compile Include="PlaceFamily\PlaceFamilyUtils.cs" />
+    <Compile Include="PlaceFamily\PlaceFamilyWindow.xaml.cs">
+      <DependentUpon>PlaceFamilyWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Progressbar\ProgressBarView.xaml.cs">
+      <DependentUpon>ProgressBarView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Lib\AngleMemory.cs" />
+    <Compile Include="Lib\TransDataParaMemory.cs" />
+    <Compile Include="Lib\Constants.cs" />
+    <Compile Include="Lib\Logger.cs" />
+    <Compile Include="Lib\MEPUtils.cs" />
+    <Compile Include="Lib\RevitAsyncHelper.cs" />
+    <Compile Include="Rotate\ImprovedRotationEventHandler.cs" />
+    <Compile Include="Rotate\RotateElementsCommand.cs" />
+    <Compile Include="Rotate\RotateWindow.xaml.cs" />
+    <Compile Include="Selection Filter\SelectionFilter.cs" />
+    <Compile Include="Sheet from excel\SheetFromExcelCmd.cs" />
+    <Compile Include="Sheet from excel\SheetFromExcelView.xaml.cs">
+      <DependentUpon>SheetFromExcelView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Split Duct\SplitDuctCmd.cs" />
+    <Compile Include="Split Duct\SplitDuctWindow.xaml.cs">
+      <DependentUpon>SplitDuctWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="StatusBar Demo\StatusBarDemoCmd.cs" />
+    <Compile Include="Trans Data Para\Trans Data Para.cs" />
+    <Compile Include="Trans Data Para\TransDataParaEventHandler.cs" />
+    <Compile Include="Trans Data Para\TransDataParaViewModel.cs" />
+    <Compile Include="Trans Data Para\TransDataParaWindow.xaml.cs">
+      <DependentUpon>TransDataParaWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UpDownTool\Event\DuctCutDownEvent.cs" />
+    <Compile Include="UpDownTool\Event\PipeCutDownEvent.cs" />
+    <Compile Include="UpDownTool\Utlis\DuctCutDowUtils.cs" />
+    <Compile Include="UpDownTool\MEPUpDownCmd.cs" />
+    <Compile Include="UpDownTool\MEPUpDownView.xaml.cs">
+      <DependentUpon>MEPUpDownView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UpDownTool\PictureItem.cs" />
+    <Compile Include="UpDownTool\Utlis\PipeCutDownUtils.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Commands\ExportHandler.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Commands\IFCExportHandler.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\SimpleExportCommand.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Converters\UIConverters.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Events\PDFExportEventHandler.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\AutoCADBindManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\BatchExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\DrawingTransmittalManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\DWGCleanupManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\DWGExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\DXFExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\ExportPlusProfileManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\IFCExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\ImageExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\NavisworksExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\PaperSizeManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\PDFExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\PDFExportManager_PrintManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\ProfileManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\ProfileManagerService.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\SchedulingAssistant.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\ViewSheetSetManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\XMLExportManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Managers\XMLProfileManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\DWGExportSettings.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ExportPlusModels.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ExportPlusProfile.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ExportPlusXMLProfile.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ExportQueueItem.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\IFCExportSettings.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ImageExportSettings.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\NWCExportSettings.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\PaperSize.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ParameterInfo.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\Profile.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\SheetItem.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\SheetListGridModel.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ViewItem.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\ViewSheetSetInfo.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Models\XMLExportSettings.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Services\PDFOptionsApplier.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\AlphanumericComparer.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\BrowseFileBehavior.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\FileNameGenerator.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\NotificationHelper.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\ObservableRangeCollection.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\ParameterUtils.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\SheetSizeDetector.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\SheetBatchLoader.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\AsyncSheetViewManager.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Utils\ValueConverters.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\CustomFileNameDialog.xaml.cs">
+      <DependentUpon>CustomFileNameDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ExportCompletedDialog.xaml.cs">
+      <DependentUpon>ExportCompletedDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ExportPlusMainWindow.Profiles.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ExportPlusMainWindow.ViewSheetSets.cs" />
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ExportPlusMainWindow.xaml.cs">
+      <DependentUpon>ExportPlusMainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ProfileNameDialog.xaml.cs">
+      <DependentUpon>ProfileNameDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\SaveViewSheetSetDialog.xaml.cs">
+      <DependentUpon>SaveViewSheetSetDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\SelectExistingSetDialog.xaml.cs">
+      <DependentUpon>SelectExistingSetDialog.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="Change Length\PipeLengthWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="DockablePanel\MEPToolsPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="PlaceFamily\PlaceFamilyWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Progressbar\ProgressBarView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Rotate\RotateWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Sheet from excel\SheetFromExcelView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Split Duct\SplitDuctWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Trans Data Para\TransDataParaWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UpDownTool\MEPUpDownView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\CustomFileNameDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ExportCompletedDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ExportPlusMainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\ProfileNameDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\SaveViewSheetSetDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="D:\RevitAPI_tu viet\RevitAPIMEP\Export\Views\SelectExistingSetDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="Export+\BuildAllVersions.ps1" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="App\PackageContents.xml" />
+    <Content Include="App\Quoc_MEP.addin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Export+\.gitignore" />
+    <Content Include="Export+\Export.sln" />
+    <Content Include="Resources\*.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Align 3D\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="fastwpfgrid-master\FastWpfGrid\FastWpfGrid.csproj">
+      <Project>{e9d6f03c-bfb5-4d31-a15e-7f789b4bbcc3}</Project>
+      <Name>FastWpfGrid</Name>
+    </ProjectReference>
+    <ProjectReference Include="fastwpfgrid-master\WriteableBitmapEx\WriteableBitmapEx.Wpf.csproj">
+      <Project>{b0aa6a94-6784-4221-81f0-244a68c374c0}</Project>
+      <Name>WriteableBitmapEx.Wpf</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Auto-deploy to Revit after build -->
+  <Target Name="AfterBuild">
+    <PropertyGroup>
+      <AddinFolder2023>$(AppData)\Autodesk\Revit\Addins\2023</AddinFolder2023>
+      <AddinFolder2022>$(AppData)\Autodesk\Revit\Addins\2022</AddinFolder2022>
+      <AddinFolder2020>$(AppData)\Autodesk\Revit\Addins\2020</AddinFolder2020>
+    </PropertyGroup>
+    <!-- Deploy to Revit 2023 -->
+    <MakeDir Directories="$(AddinFolder2023)" Condition="!Exists('$(AddinFolder2023)')" />
+    <MakeDir Directories="$(AddinFolder2023)\Resources" Condition="!Exists('$(AddinFolder2023)\Resources')" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(AddinFolder2023)" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).pdb" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)App\$(AssemblyName).addin" DestinationFiles="$(AddinFolder2023)\$(AssemblyName).addin" />
+    <Copy SourceFiles="$(OutputPath)ExcelDataReader.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)ExcelDataReader.DataSet.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Wpf.Ui.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Wpf.Ui.Abstractions.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Nice3point.Revit.Extensions.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Nice3point.Revit.Toolkit.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)packages\ricaun.Revit.UI.0.8.0\lib\net48\ricaun.Revit.UI.0.8.0.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)packages\ricaun.Revit.UI.StatusBar.1.0.0\lib\net47\ricaun.Revit.UI.StatusBar.1.0.0.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <!-- Copy FastWpfGrid DLLs to Revit 2023 -->
+    <Copy SourceFiles="$(OutputPath)FastWpfGrid.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)WriteableBitmapEx.Wpf.dll" DestinationFolder="$(AddinFolder2023)" ContinueOnError="true" />
+    <!-- Copy Resources (Icons) to Revit 2023 -->
+    <ItemGroup>
+      <ResourceFiles Include="$(OutputPath)Resources\*.png" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ResourceFiles)" DestinationFolder="$(AddinFolder2023)\Resources" ContinueOnError="true" />
+    <!-- Deploy to Revit 2022 -->
+    <MakeDir Directories="$(AddinFolder2022)" Condition="!Exists('$(AddinFolder2022)')" />
+    <MakeDir Directories="$(AddinFolder2022)\Resources" Condition="!Exists('$(AddinFolder2022)\Resources')" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(AddinFolder2022)" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).pdb" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)App\$(AssemblyName).addin" DestinationFiles="$(AddinFolder2022)\$(AssemblyName).addin" />
+    <Copy SourceFiles="$(OutputPath)ExcelDataReader.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)ExcelDataReader.DataSet.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Wpf.Ui.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Wpf.Ui.Abstractions.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Nice3point.Revit.Extensions.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Nice3point.Revit.Toolkit.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)packages\ricaun.Revit.UI.0.8.0\lib\net48\ricaun.Revit.UI.0.8.0.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)packages\ricaun.Revit.UI.StatusBar.1.0.0\lib\net47\ricaun.Revit.UI.StatusBar.1.0.0.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <!-- Copy FastWpfGrid DLLs to Revit 2022 -->
+    <Copy SourceFiles="$(OutputPath)FastWpfGrid.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)WriteableBitmapEx.Wpf.dll" DestinationFolder="$(AddinFolder2022)" ContinueOnError="true" />
+    <!-- Copy Resources (Icons) to Revit 2022 -->
+    <Copy SourceFiles="@(ResourceFiles)" DestinationFolder="$(AddinFolder2022)\Resources" ContinueOnError="true" />
+    <!-- Deploy to Revit 2020 -->
+    <MakeDir Directories="$(AddinFolder2020)" Condition="!Exists('$(AddinFolder2020)')" />
+    <MakeDir Directories="$(AddinFolder2020)\Resources" Condition="!Exists('$(AddinFolder2020)\Resources')" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(AddinFolder2020)" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).pdb" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)App\$(AssemblyName).addin" DestinationFiles="$(AddinFolder2020)\$(AssemblyName).addin" />
+    <Copy SourceFiles="$(OutputPath)ExcelDataReader.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)ExcelDataReader.DataSet.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Wpf.Ui.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Wpf.Ui.Abstractions.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Nice3point.Revit.Extensions.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)Nice3point.Revit.Toolkit.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)packages\ricaun.Revit.UI.0.8.0\lib\net48\ricaun.Revit.UI.0.8.0.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(ProjectDir)packages\ricaun.Revit.UI.StatusBar.1.0.0\lib\net47\ricaun.Revit.UI.StatusBar.1.0.0.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <!-- Copy FastWpfGrid DLLs to Revit 2020 -->
+    <Copy SourceFiles="$(OutputPath)FastWpfGrid.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OutputPath)WriteableBitmapEx.Wpf.dll" DestinationFolder="$(AddinFolder2020)" ContinueOnError="true" />
+    <!-- Copy Resources (Icons) to Revit 2020 -->
+    <Copy SourceFiles="@(ResourceFiles)" DestinationFolder="$(AddinFolder2020)\Resources" ContinueOnError="true" />
+    <Message Text="✅ Auto-deployed to Revit 2023: $(AddinFolder2023)" Importance="high" />
+    <Message Text="✅ Auto-deployed to Revit 2022: $(AddinFolder2022)" Importance="high" />
+    <Message Text="✅ Auto-deployed to Revit 2020: $(AddinFolder2020)" Importance="high" />
+  </Target>
+  <Import Project="packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets" Condition="Exists('packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets'))" />
+  </Target>
+  <!-- ⚡ IMPORT: Nice3point Revit Build Tasks for publishing -->
+  <Import Project="packages\Nice3point.Revit.Build.Tasks.3.0.1\build\Nice3point.Revit.Publish.targets" Condition="Exists('packages\Nice3point.Revit.Build.Tasks.3.0.1\build\Nice3point.Revit.Publish.targets')" />
+</Project>

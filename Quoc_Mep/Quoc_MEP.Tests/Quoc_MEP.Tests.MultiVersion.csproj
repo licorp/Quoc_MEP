@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <PlatformTarget>x64</PlatformTarget>
+    
+    <!-- Cấu hình Revit Version - Thay đổi giá trị này để build cho phiên bản khác -->
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2023</RevitVersion>
+    
+    <!-- Output path theo Revit version -->
+    <OutputPath>bin\$(Configuration)\Revit$(RevitVersion)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    
+    <!-- Assembly info -->
+    <AssemblyName>Quoc_MEP.Tests.Revit$(RevitVersion)</AssemblyName>
+    <RootNamespace>Quoc_MEP.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Define constants cho từng phiên bản Revit -->
+  <PropertyGroup Condition="'$(RevitVersion)' == '2020'">
+    <DefineConstants>$(DefineConstants);REVIT2020</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2021'">
+    <DefineConstants>$(DefineConstants);REVIT2021</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2022'">
+    <DefineConstants>$(DefineConstants);REVIT2022</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2023'">
+    <DefineConstants>$(DefineConstants);REVIT2023</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2024'">
+    <DefineConstants>$(DefineConstants);REVIT2024</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2025'">
+    <DefineConstants>$(DefineConstants);REVIT2025</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2026'">
+    <DefineConstants>$(DefineConstants);REVIT2026</DefineConstants>
+  </PropertyGroup>
+
+  <!-- NuGet Packages -->
+  <ItemGroup>
+    <!-- NUnit Testing Framework -->
+    <PackageReference Include="NUnit" Version="4.2.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    
+    <!-- Nice3point Revit API - Tự động chọn version theo RevitVersion -->
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
+  </ItemGroup>
+
+  <!-- Copy references to output -->
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <!-- Exclude Revit DLLs from copy to output -->
+  <ItemGroup>
+    <Reference Update="RevitAPI">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="RevitAPIUI">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  
+</Project>

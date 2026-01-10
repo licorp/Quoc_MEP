@@ -28,7 +28,7 @@ namespace Quoc_MEP.Builders
             AddIn.CreateEntry("Application")
                 .Name(AddinName)
                 .Assembly(AddinAssembly)
-                .AddInId(new Guid(AddinGuid))
+                .AddInId(AddinGuid)
                 .FullClassName(AddinClassName)
                 .VendorId(VendorId)
                 .VendorDescription(VendorDescription);
