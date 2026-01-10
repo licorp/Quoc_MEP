@@ -128,74 +128,78 @@ jobs:
     - name: Generate PackageContents.xml using builder
       shell: pwsh
       run: |
-        Write-Host "🎨 Generating PackageContents.xml using QuocMEPPackageBuilder..." -ForegroundColor Cyan
+        # Error handling
+        $ErrorActionPreference = "Stop"
         
-        # List downloaded artifacts to see structure
-        Write-Host "📂 Artifact structure:" -ForegroundColor Yellow
-        Get-ChildItem -Path "BuilderArtifacts" -Recurse | Select-Object FullName | Write-Host
+        Write-Host "╔══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
+        Write-Host "║  Autodesk Package Manifest Generation                   ║" -ForegroundColor Cyan
+        Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
         
-        # Find the assembly (it might be directly in BuilderArtifacts or in a subdirectory)
-        $assemblyPath = Get-ChildItem -Path "BuilderArtifacts" -Filter "Quoc_MEP.dll" -Recurse | Select-Object -First 1
+        # [1/4] Locate assemblies
+        Write-Host "`n[1/4] 🔍 Locating builder assemblies..." -ForegroundColor Yellow
+        
+        $assemblyPath = Get-ChildItem -Path "BuilderArtifacts" -Filter "Quoc_MEP.dll" -Recurse -ErrorAction Stop | Select-Object -First 1
         if (-not $assemblyPath) {
-          Write-Host "❌ Quoc_MEP.dll not found in BuilderArtifacts" -ForegroundColor Red
-          exit 1
+          throw "Quoc_MEP.dll not found in BuilderArtifacts"
         }
+        Write-Host "      ✓ Quoc_MEP.dll: $($assemblyPath.FullName)" -ForegroundColor Green
         
-        Write-Host "✅ Found assembly: $($assemblyPath.FullName)" -ForegroundColor Green
-        Add-Type -Path $assemblyPath.FullName
+        $packageBuilderPath = Get-ChildItem -Path (Split-Path $assemblyPath.FullName) -Filter "Autodesk.PackageBuilder.dll" -ErrorAction Stop | Select-Object -First 1
+        if (-not $packageBuilderPath) {
+          throw "Autodesk.PackageBuilder.dll not found"
+        }
+        Write-Host "      ✓ PackageBuilder: $($packageBuilderPath.FullName)" -ForegroundColor Green
         
-        # Find and load PackageBuilder DLL in the same directory
-        $packageBuilderPath = Get-ChildItem -Path (Split-Path $assemblyPath.FullName) -Filter "Autodesk.PackageBuilder.dll" -ErrorAction SilentlyContinue
-        if ($packageBuilderPath) {
+        # [2/4] Load assemblies
+        Write-Host "`n[2/4] 📚 Loading .NET assemblies..." -ForegroundColor Yellow
+        try {
           Add-Type -Path $packageBuilderPath.FullName
-          Write-Host "✅ Loaded Autodesk.PackageBuilder from: $($packageBuilderPath.FullName)" -ForegroundColor Green
-        } else {
-          Write-Host "⚠️  PackageBuilder DLL not found, assuming it's in GAC" -ForegroundColor Yellow
+          Add-Type -Path $assemblyPath.FullName
+          Write-Host "      ✓ Assemblies loaded successfully" -ForegroundColor Green
+        }
+        catch {
+          Write-Host "      ✗ Failed to load assemblies: $_" -ForegroundColor Red
+          throw
         }
         
         # Create output directory
         New-Item -ItemType Directory -Force -Path "GeneratedFiles" | Out-Null
         
-        # Generate PackageContents.xml
+        # [3/4] Generate PackageContents.xml
+        Write-Host "`n[3/4] 📦 Generating PackageContents.xml..." -ForegroundColor Yellow
         try {
-          $builder = New-Object Quoc_MEP.Builders.QuocMEPPackageBuilder("1.0.0")
-          $packageXmlPath = "GeneratedFiles\PackageContents.xml"
-          $null = $builder.Build($packageXmlPath)
+          $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
+          $builder = New-Object Quoc_MEP.Builders.QuocMEPPackageBuilder($version)
+          $packageXml = "GeneratedFiles\PackageContents.xml"
+          $null = $builder.Build($packageXml)
           
-          if (Test-Path $packageXmlPath) {
-            Write-Host "✅ PackageContents.xml created" -ForegroundColor Green
-            Get-Content $packageXmlPath | Write-Host -ForegroundColor Gray
-          } else {
-            Write-Host "❌ Failed to create PackageContents.xml" -ForegroundColor Red
-            exit 1
-          }
-        } catch {
-          Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
-          Write-Host $_.ScriptStackTrace -ForegroundColor Red
-          exit 1
+          Write-Host "      ✓ PackageContents.xml generated" -ForegroundColor Green
+          Write-Host "      ℹ Version: $version" -ForegroundColor Gray
+          Write-Host "      ℹ Output: $packageXml" -ForegroundColor Gray
+        }
+        catch {
+          Write-Host "      ✗ Generation failed: $_" -ForegroundColor Red
+          throw
         }
         
-        # Generate Quoc_MEP.addin
+        # [4/4] Generate Quoc_MEP.addin
+        Write-Host "`n[4/4] 📝 Generating Quoc_MEP.addin manifest..." -ForegroundColor Yellow
         try {
           $addinBuilder = New-Object Quoc_MEP.Builders.QuocMEPAddinBuilder
-          $addinPath = "GeneratedFiles\Quoc_MEP.addin"
-          $null = $addinBuilder.Build($addinPath)
+          $addinFile = "GeneratedFiles\Quoc_MEP.addin"
+          $null = $addinBuilder.Build($addinFile)
           
-          if (Test-Path $addinPath) {
-            Write-Host "✅ Quoc_MEP.addin created" -ForegroundColor Green
-            Get-Content $addinPath | Write-Host -ForegroundColor Gray
-          } else {
-            Write-Host "❌ Failed to create addin file" -ForegroundColor Red
-            exit 1
-          }
-        } catch {
-          Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
-          Write-Host $_.ScriptStackTrace -ForegroundColor Red
-          exit 1
+          Write-Host "      ✓ Quoc_MEP.addin generated" -ForegroundColor Green
+          Write-Host "      ℹ Output: $addinFile" -ForegroundColor Gray
+        }
+        catch {
+          Write-Host "      ✗ Generation failed: $_" -ForegroundColor Red
+          throw
         }
         
-        Write-Host ""
-        Write-Host "✅ All files generated successfully!" -ForegroundColor Green
+        Write-Host "`n╔══════════════════════════════════════════════════════════╗" -ForegroundColor Green
+        Write-Host "║  ✓ Manifest Generation Completed Successfully           ║" -ForegroundColor Green
+        Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Green
     
     - name: Download all version artifacts
       uses: actions/download-artifact@v4
