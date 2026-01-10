@@ -119,18 +119,78 @@ jobs:
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
     
-    - name: Restore NuGet packages
-      working-directory: Quoc_Mep
-      run: |
-        nuget restore packages.config -PackagesDirectory packages
-        nuget restore Quoc_MEP_Main.sln
+    - name: Download a single build artifact for builders
+      uses: actions/download-artifact@v4
+      with:
+        name: Quoc_MEP-Revit2024-Release
+        path: BuilderArtifacts
     
-    - name: Generate PackageContents.xml and .addin files
+    - name: Generate PackageContents.xml using builder
       shell: pwsh
-      working-directory: Quoc_Mep
       run: |
-        Write-Host "🎨 Generating package files using Autodesk.PackageBuilder..." -ForegroundColor Cyan
-        .\Generate-PackageFiles.ps1 -OutputDir "..\GeneratedFiles" -Version "1.0.0"
+        Write-Host "🎨 Generating PackageContents.xml using QuocMEPPackageBuilder..." -ForegroundColor Cyan
+        
+        # Load the built assembly
+        $assemblyPath = "BuilderArtifacts\Revit2024\Quoc_MEP.dll"
+        if (-not (Test-Path $assemblyPath)) {
+          Write-Host "❌ Assembly not found: $assemblyPath" -ForegroundColor Red
+          exit 1
+        }
+        
+        Add-Type -Path $assemblyPath
+        
+        # Find and load PackageBuilder DLL
+        $packageBuilderPath = Get-ChildItem -Path "BuilderArtifacts\Revit2024" -Filter "Autodesk.PackageBuilder.dll" -ErrorAction SilentlyContinue
+        if ($packageBuilderPath) {
+          Add-Type -Path $packageBuilderPath.FullName
+          Write-Host "✅ Loaded Autodesk.PackageBuilder" -ForegroundColor Green
+        } else {
+          Write-Host "⚠️  PackageBuilder DLL not found, assuming it's in GAC" -ForegroundColor Yellow
+        }
+        
+        # Create output directory
+        New-Item -ItemType Directory -Force -Path "GeneratedFiles" | Out-Null
+        
+        # Generate PackageContents.xml
+        try {
+          $builder = New-Object Quoc_MEP.Builders.QuocMEPPackageBuilder("1.0.0")
+          $packageXmlPath = "GeneratedFiles\PackageContents.xml"
+          $null = $builder.Build($packageXmlPath)
+          
+          if (Test-Path $packageXmlPath) {
+            Write-Host "✅ PackageContents.xml created" -ForegroundColor Green
+            Get-Content $packageXmlPath | Write-Host -ForegroundColor Gray
+          } else {
+            Write-Host "❌ Failed to create PackageContents.xml" -ForegroundColor Red
+            exit 1
+          }
+        } catch {
+          Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
+          Write-Host $_.ScriptStackTrace -ForegroundColor Red
+          exit 1
+        }
+        
+        # Generate Quoc_MEP.addin
+        try {
+          $addinBuilder = New-Object Quoc_MEP.Builders.QuocMEPAddinBuilder
+          $addinPath = "GeneratedFiles\Quoc_MEP.addin"
+          $null = $addinBuilder.Build($addinPath)
+          
+          if (Test-Path $addinPath) {
+            Write-Host "✅ Quoc_MEP.addin created" -ForegroundColor Green
+            Get-Content $addinPath | Write-Host -ForegroundColor Gray
+          } else {
+            Write-Host "❌ Failed to create addin file" -ForegroundColor Red
+            exit 1
+          }
+        } catch {
+          Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
+          Write-Host $_.ScriptStackTrace -ForegroundColor Red
+          exit 1
+        }
+        
+        Write-Host ""
+        Write-Host "✅ All files generated successfully!" -ForegroundColor Green
     
     - name: Download all version artifacts
       uses: actions/download-artifact@v4
