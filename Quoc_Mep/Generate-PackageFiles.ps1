@@ -27,7 +27,7 @@ param(
     [string]$Version = "1.0.0",
     
     [Parameter(Mandatory=$false)]
-    [string]$ProjectPath = ".\Quoc_Mep\Quoc_MEP.csproj"
+    [string]$ProjectPath = "Quoc_MEP.csproj"
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,7 +45,24 @@ if (-not (Test-Path $OutputDir)) {
 }
 
 # Absolute paths
-$OutputDir = (Resolve-Path $OutputDir).Path
+$OutputDir = (Resolve-Path $OutputDir -ErrorAction SilentlyContinue)
+if (-not $OutputDir) {
+    $OutputDir = Join-Path (Get-Location) $OutputDir
+    if (-not (Test-Path $OutputDir)) {
+        New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
+    }
+    $OutputDir = (Resolve-Path $OutputDir).Path
+} else {
+    $OutputDir = $OutputDir.Path
+}
+
+# Get project path relative to script location
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectPath = Join-Path $ScriptDir $ProjectPath
+if (-not (Test-Path $ProjectPath)) {
+    Write-Host "❌ Project file not found: $ProjectPath" -ForegroundColor Red
+    exit 1
+}
 $ProjectPath = (Resolve-Path $ProjectPath).Path
 $ProjectDir = Split-Path $ProjectPath -Parent
 
