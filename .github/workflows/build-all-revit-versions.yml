@@ -130,20 +130,25 @@ jobs:
       run: |
         Write-Host "🎨 Generating PackageContents.xml using QuocMEPPackageBuilder..." -ForegroundColor Cyan
         
-        # Load the built assembly
-        $assemblyPath = "BuilderArtifacts\Revit2024\Quoc_MEP.dll"
-        if (-not (Test-Path $assemblyPath)) {
-          Write-Host "❌ Assembly not found: $assemblyPath" -ForegroundColor Red
+        # List downloaded artifacts to see structure
+        Write-Host "📂 Artifact structure:" -ForegroundColor Yellow
+        Get-ChildItem -Path "BuilderArtifacts" -Recurse | Select-Object FullName | Write-Host
+        
+        # Find the assembly (it might be directly in BuilderArtifacts or in a subdirectory)
+        $assemblyPath = Get-ChildItem -Path "BuilderArtifacts" -Filter "Quoc_MEP.dll" -Recurse | Select-Object -First 1
+        if (-not $assemblyPath) {
+          Write-Host "❌ Quoc_MEP.dll not found in BuilderArtifacts" -ForegroundColor Red
           exit 1
         }
         
-        Add-Type -Path $assemblyPath
+        Write-Host "✅ Found assembly: $($assemblyPath.FullName)" -ForegroundColor Green
+        Add-Type -Path $assemblyPath.FullName
         
-        # Find and load PackageBuilder DLL
-        $packageBuilderPath = Get-ChildItem -Path "BuilderArtifacts\Revit2024" -Filter "Autodesk.PackageBuilder.dll" -ErrorAction SilentlyContinue
+        # Find and load PackageBuilder DLL in the same directory
+        $packageBuilderPath = Get-ChildItem -Path (Split-Path $assemblyPath.FullName) -Filter "Autodesk.PackageBuilder.dll" -ErrorAction SilentlyContinue
         if ($packageBuilderPath) {
           Add-Type -Path $packageBuilderPath.FullName
-          Write-Host "✅ Loaded Autodesk.PackageBuilder" -ForegroundColor Green
+          Write-Host "✅ Loaded Autodesk.PackageBuilder from: $($packageBuilderPath.FullName)" -ForegroundColor Green
         } else {
           Write-Host "⚠️  PackageBuilder DLL not found, assuming it's in GAC" -ForegroundColor Yellow
         }
