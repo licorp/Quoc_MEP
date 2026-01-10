@@ -246,6 +246,13 @@
     <Compile Include="UpDownTool\Utlis\PipeCutDownUtils.cs" />
     
     <!-- ============================================ -->
+    <!-- 📦 AUTODESK.PACKAGEBUILDER INTEGRATION -->
+    <!-- ============================================ -->
+    <Compile Include="Builders\QuocMEPPackageBuilder.cs" />
+    <Compile Include="Builders\QuocMEPAddinBuilder.cs" />
+    <Compile Include="Tools\GeneratePackageFiles.cs" />
+    
+    <!-- ============================================ -->
     <!-- ⚠️ EXPORT MODULE - REMOVED -->
     <!-- ============================================ -->
     <!--
