@@ -260,10 +260,14 @@ jobs:
         }
         
         # Tạo README chi tiết
+        $utcTime = [DateTime]::UtcNow
+        $hcmTime = $utcTime.AddHours(7)
+        $buildTime = $hcmTime.ToString("yyyy-MM-dd HH:mm:ss")
+        
         @"
         # Quoc MEP Add-in - Universal Installation
         
-        Built on: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        Built on: $buildTime (Ho Chi Minh Time)
         
         ## 🚀 Cài đặt đơn giản - Chỉ 3 bước!
         
@@ -386,13 +390,26 @@ jobs:
     - name: Compress package
       shell: pwsh
       run: |
-        Compress-Archive -Path "Quoc_MEP_Universal\*" -DestinationPath "Quoc_MEP_Universal.zip" -Force
+        # Get current time in Ho Chi Minh timezone (UTC+7)
+        $utcTime = [DateTime]::UtcNow
+        $hcmTime = $utcTime.AddHours(7)
+        $timestamp = $hcmTime.ToString("yyyyMMdd_HHmmss")
+        $zipName = "Quoc_MEP_$timestamp.zip"
+        
+        Write-Host "🕒 Building at: $($hcmTime.ToString('yyyy-MM-dd HH:mm:ss')) (HCM Time)" -ForegroundColor Cyan
+        Write-Host "📦 Creating: $zipName" -ForegroundColor Green
+        
+        Compress-Archive -Path "Quoc_MEP_Universal\*" -DestinationPath $zipName -Force
+        
+        # Save timestamp for next step
+        echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+        echo "HCM_TIME=$($hcmTime.ToString('yyyy-MM-dd HH:mm:ss'))" >> $env:GITHUB_ENV
     
     - name: Upload universal package
       uses: actions/upload-artifact@v4
       with:
         name: Quoc_MEP_Universal_Package
-        path: Quoc_MEP_Universal.zip
+        path: ${{ env.ZIP_NAME }}
         retention-days: 90
 
   # Tạo release nếu có tag
