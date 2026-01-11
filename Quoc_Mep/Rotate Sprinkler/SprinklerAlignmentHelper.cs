@@ -17,6 +17,56 @@ namespace Quoc_MEP
         private const double DEFAULT_TOLERANCE = 1.0 / 304.8;
 
         /// <summary>
+        /// Xóa tất cả dimensions liên quan đến các element
+        /// </summary>
+        private static List<ElementId> DeleteDimensionsForElements(Document doc, ICollection<ElementId> elementIds)
+        {
+            var deletedDimensions = new List<ElementId>();
+            
+            try
+            {
+                // Tìm tất cả dimensions trong document
+                var collector = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Dimension));
+
+                foreach (Dimension dim in collector)
+                {
+                    bool shouldDelete = false;
+                    
+                    // Kiểm tra xem dimension có reference đến bất kỳ element nào trong danh sách không
+                    foreach (Reference dimRef in dim.References)
+                    {
+                        if (dimRef != null && dimRef.ElementId != null && elementIds.Contains(dimRef.ElementId))
+                        {
+                            shouldDelete = true;
+                            break;
+                        }
+                    }
+                    
+                    if (shouldDelete)
+                    {
+                        try
+                        {
+                            doc.Delete(dim.Id);
+                            deletedDimensions.Add(dim.Id);
+                            Debug.WriteLine($"[DIMENSION] Đã xóa dimension {dim.Id} để tránh lỗi parallel");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[DIMENSION] Không thể xóa dimension {dim.Id}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[DIMENSION] Lỗi khi xóa dimensions: {ex.Message}");
+            }
+            
+            return deletedDimensions;
+        }
+
+        /// <summary>
         /// Kiểm tra element có thẳng hàng với Pap theo trục Z không
         /// (X-Y của element phải khớp với X-Y của Pap connector)
         /// </summary>
@@ -765,9 +815,11 @@ namespace Quoc_MEP
         /// <param name="pap">Pap element</param>
         /// <param name="rotationCenter">Tâm quay (giao điểm center line ống chính và vector Pap)</param>
         /// <param name="mainPipe">Ống chính để lấy trục quay</param>
+        /// <param name="dimensionsDeleted">Output: số dimensions đã xóa</param>
         /// <returns>True nếu quay thành công</returns>
-        public static bool RotateAssemblyToAlignWithZ(Document doc, Element pap, XYZ rotationCenter, Pipe mainPipe = null)
+        public static bool RotateAssemblyToAlignWithZ(Document doc, Element pap, XYZ rotationCenter, Pipe mainPipe, out int dimensionsDeleted)
         {
+            dimensionsDeleted = 0;
             try
             {
                 // Tìm Sprinkler trong chuỗi
@@ -901,6 +953,15 @@ namespace Quoc_MEP
                 // Unpin pap
                 ConnectionHelper.UnpinElementIfPinned(doc, pap);
 
+                // XÓA DIMENSIONS TRƯỚC KHI XOAY để tránh lỗi "References are no longer parallel"
+                Debug.WriteLine("[ROTATE] Đang xóa dimensions liên quan...");
+                var deletedDimensions = DeleteDimensionsForElements(doc, elementsToRotate);
+                dimensionsDeleted = deletedDimensions.Count;
+                if (dimensionsDeleted > 0)
+                {
+                    Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions để tránh lỗi");
+                }
+
                 // Quay tất cả element quanh trục của ống chính
                 Debug.WriteLine($"[ROTATE] Thực hiện xoay {angle * 180 / Math.PI:F2}°...");
                 ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
@@ -1009,7 +1070,10 @@ namespace Quoc_MEP
                             result.RotationApplied = true;
                             result.RotationAngle = angleDegrees;
 
-                            bool rotated = RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe);
+                            int dimsDeleted;
+                            bool rotated = RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe, out dimsDeleted);
+                            result.DimensionsDeleted = dimsDeleted;
+                            
                             if (!rotated)
                             {
                                 result.ErrorMessage = "Không thể quay cụm element";
@@ -1397,7 +1461,9 @@ namespace Quoc_MEP
                                 result.RotationApplied = true;
                                 result.RotationAngle = angleDegrees;
 
-                                RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe);
+                                int dimsDeleted;
+                                RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe, out dimsDeleted);
+                                result.DimensionsDeleted += dimsDeleted;
                             }
                         }
                     }
@@ -1463,6 +1529,7 @@ namespace Quoc_MEP
         public bool AlreadyAligned { get; set; } = false;
         public bool RotationApplied { get; set; } = false;
         public double RotationAngle { get; set; } = 0; // Góc đã quay (degrees)
+        public int DimensionsDeleted { get; set; } = 0; // Số dimensions đã xóa
         public List<Element> ElementsNeedAlignment { get; set; } = new List<Element>();
         public List<Element> ElementsAligned { get; set; } = new List<Element>();
         public string ErrorMessage { get; set; } = "";

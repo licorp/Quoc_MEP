@@ -58,6 +58,7 @@ namespace Quoc_MEP
                         int totalFailed = 0;
                         int totalAlreadyAligned = 0;
                         int totalRotated = 0;
+                        int totalDimensionsDeleted = 0;
                         List<string> errors = new List<string>();
 
                         foreach (Element pap in paps)
@@ -68,6 +69,7 @@ namespace Quoc_MEP
                             if (result.Success)
                             {
                                 totalSuccess++;
+                                totalDimensionsDeleted += result.DimensionsDeleted;
                                 if (result.AlreadyAligned && !result.RotationApplied)
                                 {
                                     totalAlreadyAligned++;
@@ -100,6 +102,10 @@ namespace Quoc_MEP
                             if (totalRotated > 0)
                             {
                                 msg += $"  - Đã quay để căn chỉnh: {totalRotated}\n";
+                            }
+                            if (totalDimensionsDeleted > 0)
+                            {
+                                msg += $"\n⚠ Đã xóa {totalDimensionsDeleted} dimensions để tránh lỗi\n";
                             }
                             if (totalFailed > 0)
                             {
