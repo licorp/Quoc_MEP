@@ -928,27 +928,11 @@ namespace Quoc_MEP
                 Line rotationAxis = Line.CreateBound(rotationCenter, rotationCenter + rotationAxisDirection);
                 Debug.WriteLine($"[ROTATE] Trục quay: từ ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3}) hướng ({rotationAxisDirection.X:F3}, {rotationAxisDirection.Y:F3}, {rotationAxisDirection.Z:F3})");
 
-                // Thu thập tất cả element cần quay (CHỈ quay Pap và các element phía dưới, KHÔNG quay ống chính)
+                // CHỈ QUAY PAP THÔI - Không quay pipe và sprinkler
                 var elementsToRotate = new List<ElementId>();
                 elementsToRotate.Add(pap.Id);
-                
-                var chainElements = GetAllConnectedElementsChain(pap);
-                Debug.WriteLine($"[ROTATE] Số element trong chuỗi: {chainElements.Count}");
-                
-                foreach (var element in chainElements)
-                {
-                    // Không thêm ống chính vào danh sách quay
-                    if (mainPipe != null && element.Id == mainPipe.Id)
-                    {
-                        Debug.WriteLine($"[ROTATE] Bỏ qua mainPipe: {element.Id}");
-                        continue;
-                    }
-                    
-                    ConnectionHelper.UnpinElementIfPinned(doc, element);
-                    elementsToRotate.Add(element.Id);
-                }
 
-                Debug.WriteLine($"[ROTATE] Số element sẽ xoay: {elementsToRotate.Count}");
+                Debug.WriteLine($"[ROTATE] Chỉ xoay Pap (1 element)");
                 
                 // Unpin pap
                 ConnectionHelper.UnpinElementIfPinned(doc, pap);
@@ -962,8 +946,8 @@ namespace Quoc_MEP
                     Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions để tránh lỗi");
                 }
 
-                // Quay tất cả element quanh trục của ống chính
-                Debug.WriteLine($"[ROTATE] Thực hiện xoay {angle * 180 / Math.PI:F2}°...");
+                // Quay chỉ Pap quanh trục của ống chính
+                Debug.WriteLine($"[ROTATE] Thực hiện xoay Pap {angle * 180 / Math.PI:F2}°...");
                 ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
                 Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
 
