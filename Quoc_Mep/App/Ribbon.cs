@@ -194,6 +194,10 @@ namespace Quoc_MEP
             PushButtonData Rotate = new PushButtonData("Rotate", "Rotate Element", path, nameSpace + "RotateElementsCommand");
             MyPush(panel, Rotate, "rotate-32.png", "Rotate Element with Angle");
 
+            //Align Sprinkler
+            PushButtonData alignSprinkler = new PushButtonData("alignSprinkler", "Align" + '\n' + "Sprinkler", path, nameSpace + "AlignSprinklerCommand");
+            MyPush(panel, alignSprinkler, "rotate-32.png", "Align Sprinkler and Pipe with Pap (vertical alignment)");
+
             // ⚠️ StatusBar Demo - Disabled for minimal build (requires ricaun package)
             // PushButtonData statusBar_Demo = new PushButtonData("statusBar_Demo", "StatusBar" + '\n' + "Demo", path, nameSpace + "StatusBarDemoCmd");
             // MyPush(panel, statusBar_Demo, "excel.png", "Demo ricaun.Revit.UI.StatusBar - Progress bar on Revit StatusBar.");
