@@ -168,6 +168,37 @@ namespace Quoc_MEP
         }
 
         /// <summary>
+        /// Tìm connector của Pap hướng lên (theo trục Z dương) - connector kết nối với ống chính phía trên
+        /// </summary>
+        public static Connector GetUpwardConnector(Element pap)
+        {
+            try
+            {
+                ConnectorManager connectorManager = GetConnectorManager(pap);
+                if (connectorManager == null) return null;
+
+                Connector upwardConnector = null;
+                double highestZ = double.MinValue;
+
+                foreach (Connector connector in connectorManager.Connectors)
+                {
+                    // Tìm connector có Z cao nhất (hướng lên)
+                    if (connector.Origin.Z > highestZ)
+                    {
+                        highestZ = connector.Origin.Z;
+                        upwardConnector = connector;
+                    }
+                }
+
+                return upwardConnector;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Căn chỉnh element theo trục Z để thẳng hàng với Pap
         /// Di chuyển element sao cho X-Y của nó khớp với X-Y của Pap connector
         /// </summary>
@@ -493,7 +524,7 @@ namespace Quoc_MEP
         }
 
         /// <summary>
-        /// Tìm ống DN65 kết nối trực tiếp với Pap
+        /// Tìm ống kết nối trực tiếp với Pap
         /// </summary>
         public static Pipe FindConnectedPipe(Element pap)
         {
@@ -518,14 +549,223 @@ namespace Quoc_MEP
         }
 
         /// <summary>
-        /// Quay cả cụm Pap-Pipe-Sprinkler quanh tâm connector của ống DN65
-        /// để vector Pap-Sprinkler song song với trục Z
+        /// Tìm ống chính (main pipe) mà Pap gán vào (ống được khoan lỗ, ví dụ ống 65)
+        /// Hỗ trợ 2 loại:
+        /// - Loại 1: Pap → Sprinkler (không có pipe nhỏ)
+        /// - Loại 2: Pap → Pipe → Sprinkler (có pipe nhỏ nối xuống)
+        /// Ống chính là ống mà Pap kết nối vào theo hướng ngang (không phải hướng xuống)
+        /// </summary>
+        public static Pipe FindMainPipe(Element pap)
+        {
+            var connectedElements = GetConnectedElements(pap);
+            Pipe mainPipe = null;
+            Pipe verticalPipe = null;
+            
+            // Lấy connectors của Pap để xác định hướng kết nối
+            ConnectorManager papCM = GetConnectorManager(pap);
+            
+            foreach (var element in connectedElements)
+            {
+                if (element is Pipe pipe)
+                {
+                    // Lấy hướng của pipe
+                    LocationCurve locCurve = pipe.Location as LocationCurve;
+                    if (locCurve != null)
+                    {
+                        XYZ pipeDirection = (locCurve.Curve.GetEndPoint(1) - locCurve.Curve.GetEndPoint(0)).Normalize();
+                        
+                        // Kiểm tra pipe có nằm ngang không (Z component nhỏ)
+                        bool isHorizontal = Math.Abs(pipeDirection.Z) < 0.5;
+                        
+                        if (isHorizontal)
+                        {
+                            // Đây có thể là ống chính
+                            if (mainPipe == null)
+                            {
+                                mainPipe = pipe;
+                            }
+                            else
+                            {
+                                // So sánh đường kính, chọn ống lớn hơn
+                                double currentDiameter = pipe.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.AsDouble() ?? 0;
+                                double existingDiameter = mainPipe.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.AsDouble() ?? 0;
+                                if (currentDiameter > existingDiameter)
+                                {
+                                    mainPipe = pipe;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Đây là ống thẳng đứng (pipe nhỏ nối xuống sprinkler)
+                            verticalPipe = pipe;
+                        }
+                    }
+                }
+            }
+            
+            // Nếu tìm thấy ống nằm ngang, đó là ống chính
+            if (mainPipe != null)
+            {
+                return mainPipe;
+            }
+            
+            // Nếu không có ống nằm ngang, có thể Pap kết nối trực tiếp với Sprinkler
+            // Trong trường hợp này, cần tìm ống chính thông qua connector
+            // Kiểm tra connector của Pap có kết nối với ống nào không thông qua hướng connector
+            if (papCM != null)
+            {
+                Connector horizontalConnector = null;
+                
+                foreach (Connector c in papCM.Connectors)
+                {
+                    // Connector nằm ngang (hướng X hoặc Y lớn hơn Z)
+                    XYZ dir = c.CoordinateSystem.BasisZ; // Hướng của connector
+                    if (Math.Abs(dir.Z) < 0.5) // Connector hướng ngang
+                    {
+                        horizontalConnector = c;
+                        
+                        // Kiểm tra connector này kết nối với gì
+                        if (c.IsConnected)
+                        {
+                            foreach (Connector connectedC in c.AllRefs)
+                            {
+                                if (connectedC.Owner is Pipe foundPipe && foundPipe.Id != pap.Id)
+                                {
+                                    return foundPipe;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Fallback: trả về pipe thẳng đứng nếu có
+            return verticalPipe;
+        }
+
+        /// <summary>
+        /// Lấy center line của ống (đường thẳng đi qua tâm ống)
+        /// </summary>
+        public static Line GetPipeCenterLine(Pipe pipe)
+        {
+            if (pipe.Location is LocationCurve locCurve)
+            {
+                Curve curve = locCurve.Curve;
+                if (curve is Line line)
+                {
+                    return line;
+                }
+                // Nếu là curve, tạo line từ 2 đầu
+                return Line.CreateBound(curve.GetEndPoint(0), curve.GetEndPoint(1));
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Lấy vector/hướng của Pap (hướng từ connector này sang connector kia)
+        /// </summary>
+        public static XYZ GetPapDirection(Element pap)
+        {
+            ConnectorManager cm = GetConnectorManager(pap);
+            if (cm == null) return null;
+
+            var connectors = new List<Connector>();
+            foreach (Connector c in cm.Connectors)
+            {
+                connectors.Add(c);
+            }
+
+            if (connectors.Count >= 2)
+            {
+                // Vector từ connector 0 đến connector 1
+                return (connectors[1].Origin - connectors[0].Origin).Normalize();
+            }
+            else if (connectors.Count == 1)
+            {
+                // Nếu chỉ có 1 connector, dùng hướng Z
+                return XYZ.BasisZ;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Tính giao điểm giữa center line của ống chính và vector của Pap
+        /// Đây là tâm quay chính xác
+        /// </summary>
+        /// <param name="pap">Pap element</param>
+        /// <param name="mainPipe">Ống chính (ống được khoan lỗ)</param>
+        /// <returns>Điểm giao nhau làm tâm quay</returns>
+        public static XYZ GetRotationCenter(Element pap, Pipe mainPipe)
+        {
+            // Lấy center line của ống chính
+            Line pipeCenterLine = GetPipeCenterLine(mainPipe);
+            if (pipeCenterLine == null) return null;
+
+            // Lấy vị trí và hướng của Pap
+            XYZ papLocation = GetElementLocation(pap);
+            XYZ papDirection = GetPapDirection(pap);
+            
+            if (papLocation == null || papDirection == null) return null;
+
+            // Tạo đường thẳng từ Pap theo hướng của nó
+            // Kéo dài đường thẳng đủ xa để cắt ống
+            XYZ papLineStart = papLocation - papDirection * 100; // 100 feet về phía sau
+            XYZ papLineEnd = papLocation + papDirection * 100;   // 100 feet về phía trước
+            Line papLine = Line.CreateBound(papLineStart, papLineEnd);
+
+            // Tìm giao điểm giữa 2 đường thẳng
+            // Vì 2 đường có thể không giao nhau chính xác (skew lines), 
+            // ta tìm điểm gần nhất trên pipe center line đến pap line
+            XYZ closestPointOnPipe = GetClosestPointOnLine(pipeCenterLine, papLocation);
+            
+            if (closestPointOnPipe != null)
+            {
+                return closestPointOnPipe;
+            }
+
+            // Fallback: dùng connector của pap với ống chính
+            var (papConnector, pipeConnector) = GetConnectingConnectors(pap, mainPipe);
+            if (pipeConnector != null)
+            {
+                return pipeConnector.Origin;
+            }
+
+            return papLocation;
+        }
+
+        /// <summary>
+        /// Tìm điểm gần nhất trên đường thẳng đến một điểm cho trước
+        /// </summary>
+        public static XYZ GetClosestPointOnLine(Line line, XYZ point)
+        {
+            XYZ lineStart = line.GetEndPoint(0);
+            XYZ lineEnd = line.GetEndPoint(1);
+            XYZ lineDirection = (lineEnd - lineStart).Normalize();
+            
+            // Vector từ line start đến point
+            XYZ startToPoint = point - lineStart;
+            
+            // Project point lên line
+            double projectionLength = startToPoint.DotProduct(lineDirection);
+            
+            // Điểm gần nhất trên đường thẳng (không giới hạn trong đoạn thẳng)
+            XYZ closestPoint = lineStart + lineDirection * projectionLength;
+            
+            return closestPoint;
+        }
+
+        /// <summary>
+        /// Quay cả cụm Pap-Pipe-Sprinkler quanh trục của ống chính
+        /// để vector Pap-Sprinkler thẳng đứng (song song với mặt phẳng vuông góc với ống chính)
         /// </summary>
         /// <param name="doc">Document</param>
         /// <param name="pap">Pap element</param>
-        /// <param name="rotationCenter">Tâm quay (connector của pipe với pap)</param>
+        /// <param name="rotationCenter">Tâm quay (giao điểm center line ống chính và vector Pap)</param>
+        /// <param name="mainPipe">Ống chính để lấy trục quay</param>
         /// <returns>True nếu quay thành công</returns>
-        public static bool RotateAssemblyToAlignWithZ(Document doc, Element pap, XYZ rotationCenter)
+        public static bool RotateAssemblyToAlignWithZ(Document doc, Element pap, XYZ rotationCenter, Pipe mainPipe = null)
         {
             try
             {
@@ -555,32 +795,91 @@ namespace Quoc_MEP
                 XYZ currentVector = sprinklerPosition - papPosition;
                 if (currentVector.IsZeroLength()) return true;
 
-                // Project vector lên mặt phẳng XY để tính góc quay
-                XYZ currentVectorXY = new XYZ(currentVector.X, currentVector.Y, 0);
+                // Xác định trục quay
+                XYZ rotationAxisDirection;
                 
-                // Nếu vector đã thẳng đứng trong XY thì không cần quay quanh Z
-                if (currentVectorXY.IsZeroLength())
+                if (mainPipe != null)
+                {
+                    // Dùng center line của ống chính làm trục quay
+                    Line pipeCenterLine = GetPipeCenterLine(mainPipe);
+                    if (pipeCenterLine != null)
+                    {
+                        rotationAxisDirection = (pipeCenterLine.GetEndPoint(1) - pipeCenterLine.GetEndPoint(0)).Normalize();
+                    }
+                    else
+                    {
+                        rotationAxisDirection = XYZ.BasisZ; // Fallback
+                    }
+                }
+                else
+                {
+                    rotationAxisDirection = XYZ.BasisZ; // Mặc định là trục Z
+                }
+
+                // Project vector Pap-Sprinkler lên mặt phẳng vuông góc với trục quay
+                // Để tính góc cần quay
+                XYZ projectedVector = currentVector - rotationAxisDirection * currentVector.DotProduct(rotationAxisDirection);
+                
+                if (projectedVector.IsZeroLength())
+                {
+                    return true; // Đã thẳng hàng
+                }
+
+                // Tính góc giữa projected vector và phương thẳng đứng (Z)
+                // Vector mục tiêu sau khi project cũng phải là Z (thẳng đứng)
+                XYZ targetDirection = XYZ.BasisZ - rotationAxisDirection * XYZ.BasisZ.DotProduct(rotationAxisDirection);
+                
+                if (targetDirection.IsZeroLength())
+                {
+                    // Nếu ống chính đã thẳng đứng, dùng hướng Y làm target
+                    targetDirection = XYZ.BasisY - rotationAxisDirection * XYZ.BasisY.DotProduct(rotationAxisDirection);
+                }
+                
+                if (!targetDirection.IsZeroLength())
+                {
+                    targetDirection = targetDirection.Normalize();
+                }
+                else
+                {
+                    return true; // Không thể xác định target
+                }
+
+                projectedVector = projectedVector.Normalize();
+
+                // Tính góc giữa hai vector
+                double dotProduct = projectedVector.DotProduct(targetDirection);
+                dotProduct = Math.Max(-1.0, Math.Min(1.0, dotProduct)); // Clamp
+                double angle = Math.Acos(dotProduct);
+
+                // Xác định hướng quay (chiều dương hay âm)
+                XYZ crossProduct = projectedVector.CrossProduct(targetDirection);
+                if (crossProduct.DotProduct(rotationAxisDirection) < 0)
+                {
+                    angle = -angle;
+                }
+
+                // Nếu góc quá nhỏ, không cần quay
+                if (Math.Abs(angle) < 0.001)
                 {
                     return true;
                 }
 
-                // Tính góc cần quay để vector XY về 0 (thẳng đứng)
-                // Vector mục tiêu là (0, 0, -1) hoặc (0, 0, 1)
-                XYZ targetVector = currentVector.Z < 0 ? -XYZ.BasisZ : XYZ.BasisZ;
-                
-                // Tính góc quay quanh trục Z
-                double angleAroundZ = Math.Atan2(currentVectorXY.Y, currentVectorXY.X);
-                
-                // Tạo trục quay (trục Z đi qua tâm quay)
-                Line rotationAxis = Line.CreateBound(rotationCenter, rotationCenter + XYZ.BasisZ);
+                // Tạo trục quay (đường thẳng đi qua tâm quay, song song với center line ống chính)
+                Line rotationAxis = Line.CreateBound(rotationCenter, rotationCenter + rotationAxisDirection);
 
-                // Thu thập tất cả element cần quay
+                // Thu thập tất cả element cần quay (CHỈ quay Pap và các element phía dưới, KHÔNG quay ống chính)
                 var elementsToRotate = new List<ElementId>();
                 elementsToRotate.Add(pap.Id);
                 
                 var chainElements = GetAllConnectedElementsChain(pap);
                 foreach (var element in chainElements)
                 {
+                    // Không thêm ống chính vào danh sách quay
+                    if (mainPipe != null && element.Id == mainPipe.Id)
+                    {
+                        continue;
+                    }
+                    
                     ConnectionHelper.UnpinElementIfPinned(doc, element);
                     elementsToRotate.Add(element.Id);
                 }
@@ -588,9 +887,8 @@ namespace Quoc_MEP
                 // Unpin pap
                 ConnectionHelper.UnpinElementIfPinned(doc, pap);
 
-                // Quay tất cả element quanh trục Z
-                // Góc quay = -angleAroundZ để đưa vector về song song Z
-                ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, -angleAroundZ);
+                // Quay tất cả element quanh trục của ống chính
+                ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
 
                 return true;
             }
@@ -648,23 +946,35 @@ namespace Quoc_MEP
                     return result;
                 }
 
-                // Bước 2: Tìm ống pipe kết nối với Pap để lấy tâm quay
-                Pipe connectedPipe = FindConnectedPipe(pap);
-                if (connectedPipe == null)
+                // Bước 2: Tìm ống chính (ống được khoan lỗ) để lấy tâm quay
+                Pipe mainPipe = FindMainPipe(pap);
+                XYZ rotationCenter;
+                
+                if (mainPipe != null)
                 {
-                    result.ErrorMessage = "Không tìm thấy ống kết nối với Pap";
+                    // Tính tâm quay = giao điểm giữa center line ống chính và vector của Pap
+                    rotationCenter = GetRotationCenter(pap, mainPipe);
+                }
+                else
+                {
+                    // Không có ống chính (Loại 1: Pap → Sprinkler trực tiếp)
+                    // Dùng vị trí connector hướng lên của Pap làm tâm quay
+                    Connector upConnector = GetUpwardConnector(pap);
+                    if (upConnector != null)
+                    {
+                        rotationCenter = upConnector.Origin;
+                    }
+                    else
+                    {
+                        rotationCenter = GetElementLocation(pap);
+                    }
+                }
+                
+                if (rotationCenter == null)
+                {
+                    result.ErrorMessage = "Không thể tính được tâm quay";
                     return result;
                 }
-
-                // Lấy connector của pipe với pap làm tâm quay
-                Connector pipeConnector = GetPipeConnectorToPap(pap, connectedPipe);
-                if (pipeConnector == null)
-                {
-                    result.ErrorMessage = "Không tìm thấy connector của ống";
-                    return result;
-                }
-
-                XYZ rotationCenter = pipeConnector.Origin;
 
                 // Bước 3: Kiểm tra và quay nếu cần
                 Element sprinkler = FindSprinklerInChain(pap, doc);
@@ -683,7 +993,7 @@ namespace Quoc_MEP
                             result.RotationApplied = true;
                             result.RotationAngle = angleDegrees;
 
-                            bool rotated = RotateAssemblyToAlignWithZ(doc, pap, rotationCenter);
+                            bool rotated = RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe);
                             if (!rotated)
                             {
                                 result.ErrorMessage = "Không thể quay cụm element";
@@ -701,6 +1011,365 @@ namespace Quoc_MEP
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Lấy đường kính của pipe (mm)
+        /// </summary>
+        public static double GetPipeDiameterMM(Pipe pipe)
+        {
+            if (pipe == null) return 0;
+            
+            double diameterFeet = pipe.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.AsDouble() ?? 0;
+            return diameterFeet * 304.8; // Convert feet to mm
+        }
+
+        /// <summary>
+        /// Tìm element kết nối trực tiếp với một element qua connector hướng xuống
+        /// </summary>
+        public static Element GetDownwardConnectedElement(Element element)
+        {
+            Connector downConnector = GetDownwardConnector(element);
+            if (downConnector == null || !downConnector.IsConnected) return null;
+
+            foreach (Connector connectedC in downConnector.AllRefs)
+            {
+                if (connectedC.Owner.Id != element.Id)
+                {
+                    return connectedC.Owner;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Kiểm tra element có phải là Reducing/Coupling không
+        /// </summary>
+        public static bool IsReducingOrCoupling(Element element)
+        {
+            if (element is FamilyInstance fi)
+            {
+                // Kiểm tra category là Pipe Fitting
+                if (fi.Category?.Id.IntegerValue == (int)BuiltInCategory.OST_PipeFitting)
+                {
+                    string familyName = fi.Symbol?.Family?.Name?.ToLower() ?? "";
+                    string typeName = fi.Name?.ToLower() ?? "";
+                    
+                    return familyName.Contains("reducing") || 
+                           familyName.Contains("coupling") || 
+                           familyName.Contains("bushing") ||
+                           typeName.Contains("reducing") ||
+                           typeName.Contains("coupling") ||
+                           typeName.Contains("bushing");
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Kiểm tra element có phải là Sprinkler không
+        /// </summary>
+        public static bool IsSprinkler(Element element)
+        {
+            if (element is FamilyInstance fi)
+            {
+                return fi.Category?.Id.IntegerValue == (int)BuiltInCategory.OST_Sprinklers;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Căn chỉnh element2 để thẳng hàng với element1 (thẳng đứng theo Z)
+        /// Disconnect → Align/Move → Connect
+        /// </summary>
+        public static bool AlignTwoElements(Document doc, Element element1, Element element2, Connector conn1, Connector conn2)
+        {
+            try
+            {
+                // Kiểm tra đã thẳng hàng chưa
+                if (IsAlignedVertically(conn1.Origin, conn2.Origin))
+                {
+                    return true; // Đã thẳng hàng
+                }
+
+                // 1. Disconnect
+                ConnectionHelper.UnpinElementIfPinned(doc, element2);
+                ConnectionHelper.DisconnectTwoElements(doc, element1, element2);
+
+                // 2. Tính vector di chuyển (chỉ X-Y, giữ nguyên Z)
+                double deltaX = conn1.Origin.X - conn2.Origin.X;
+                double deltaY = conn1.Origin.Y - conn2.Origin.Y;
+                XYZ moveVector = new XYZ(deltaX, deltaY, 0);
+
+                // 3. Di chuyển element2 và tất cả element kết nối phía dưới nó
+                var chainElements = GetAllConnectedElementsChain(element2);
+                
+                // Di chuyển element2
+                ElementTransformUtils.MoveElement(doc, element2.Id, moveVector);
+                
+                // Di chuyển các element trong chuỗi (nhưng không di chuyển element1)
+                foreach (var chainElement in chainElements)
+                {
+                    if (chainElement.Id != element1.Id)
+                    {
+                        ConnectionHelper.UnpinElementIfPinned(doc, chainElement);
+                        ElementTransformUtils.MoveElement(doc, chainElement.Id, moveVector);
+                    }
+                }
+
+                // 4. Connect lại
+                // Lấy lại connector sau khi di chuyển
+                var conn2Manager = GetConnectorManager(element2);
+                if (conn2Manager != null)
+                {
+                    Connector closestConn = null;
+                    double minDist = double.MaxValue;
+                    
+                    foreach (Connector c in conn2Manager.Connectors)
+                    {
+                        if (!c.IsConnected)
+                        {
+                            double dist = c.Origin.DistanceTo(conn1.Origin);
+                            if (dist < minDist)
+                            {
+                                minDist = dist;
+                                closestConn = c;
+                            }
+                        }
+                    }
+
+                    if (closestConn != null && minDist < 0.01)
+                    {
+                        // Move nhỏ để khớp chính xác
+                        XYZ finalMove = conn1.Origin - closestConn.Origin;
+                        ElementTransformUtils.MoveElement(doc, element2.Id, finalMove);
+                        foreach (var chainElement in chainElements)
+                        {
+                            if (chainElement.Id != element1.Id)
+                            {
+                                ElementTransformUtils.MoveElement(doc, chainElement.Id, finalMove);
+                            }
+                        }
+
+                        // Lấy lại connector và connect
+                        conn2Manager = GetConnectorManager(element2);
+                        foreach (Connector c in conn2Manager.Connectors)
+                        {
+                            if (!c.IsConnected && c.Origin.DistanceTo(conn1.Origin) < 0.001)
+                            {
+                                c.ConnectTo(conn1);
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// XỬ LÝ CHÍNH: Căn chỉnh toàn bộ chuỗi Pap → Pipe/Reducing → Sprinkler
+        /// Theo logic:
+        /// 1. Tìm ống 65mm kết nối với Pap → Tâm quay
+        /// 2. Nếu có Pipe 40mm: kiểm tra vector Pap-Pipe, căn chỉnh nếu cần
+        /// 3. Kiểm tra vector với Reducing, căn chỉnh nếu cần
+        /// 4. Kiểm tra vector với Sprinkler, căn chỉnh nếu cần
+        /// </summary>
+        public static AlignmentResult AlignChainFromPap(Document doc, Element pap)
+        {
+            var result = new AlignmentResult();
+
+            try
+            {
+                // Bước 1: Tìm ống 65mm (ống chính) để xác định tâm quay
+                Pipe mainPipe = FindPipeByDiameter(pap, 65.0, 5.0); // 65mm ± 5mm
+                XYZ rotationCenter = null;
+
+                if (mainPipe != null)
+                {
+                    // Tìm giao điểm center line ống 65 với vector Pap
+                    rotationCenter = GetRotationCenter(pap, mainPipe);
+                }
+                else
+                {
+                    // Không có ống 65mm, dùng connector hướng lên của Pap
+                    Connector upConn = GetUpwardConnector(pap);
+                    rotationCenter = upConn?.Origin ?? GetElementLocation(pap);
+                }
+
+                // Bước 2: Lấy element kết nối phía dưới Pap
+                Element nextElement = GetDownwardConnectedElement(pap);
+                if (nextElement == null)
+                {
+                    result.ErrorMessage = "Không tìm thấy element kết nối phía dưới Pap";
+                    return result;
+                }
+
+                // Lấy connectors kết nối giữa Pap và nextElement
+                var (papConn, nextConn) = GetConnectingConnectors(pap, nextElement);
+
+                // Xác định loại element tiếp theo
+                if (nextElement is Pipe pipe40)
+                {
+                    double diameter = GetPipeDiameterMM(pipe40);
+                    
+                    if (Math.Abs(diameter - 40.0) < 5.0) // Pipe 40mm
+                    {
+                        // TRƯỜNG HỢP 1: Pap → Pipe 40mm → Reducing → Sprinkler
+                        
+                        // Kiểm tra và căn chỉnh Pap với Pipe 40
+                        if (papConn != null && nextConn != null && !IsAlignedVertically(papConn.Origin, nextConn.Origin))
+                        {
+                            result.ElementsNeedAlignment.Add(pipe40);
+                            bool aligned = AlignTwoElements(doc, pap, pipe40, papConn, nextConn);
+                            if (aligned)
+                            {
+                                result.ElementsAligned.Add(pipe40);
+                            }
+                        }
+
+                        // Tiếp tục với Reducing
+                        Element reducing = GetDownwardConnectedElement(pipe40);
+                        if (reducing != null && IsReducingOrCoupling(reducing))
+                        {
+                            var (pipeConn, reducingConn) = GetConnectingConnectors(pipe40, reducing);
+                            if (pipeConn != null && reducingConn != null && !IsAlignedVertically(pipeConn.Origin, reducingConn.Origin))
+                            {
+                                result.ElementsNeedAlignment.Add(reducing);
+                                bool aligned = AlignTwoElements(doc, pipe40, reducing, pipeConn, reducingConn);
+                                if (aligned)
+                                {
+                                    result.ElementsAligned.Add(reducing);
+                                }
+                            }
+
+                            // Tiếp tục với Sprinkler
+                            Element sprinkler = GetDownwardConnectedElement(reducing);
+                            if (sprinkler != null && IsSprinkler(sprinkler))
+                            {
+                                var (redConn, sprConn) = GetConnectingConnectors(reducing, sprinkler);
+                                if (redConn != null && sprConn != null && !IsAlignedVertically(redConn.Origin, sprConn.Origin))
+                                {
+                                    result.ElementsNeedAlignment.Add(sprinkler);
+                                    bool aligned = AlignTwoElements(doc, reducing, sprinkler, redConn, sprConn);
+                                    if (aligned)
+                                    {
+                                        result.ElementsAligned.Add(sprinkler);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (IsReducingOrCoupling(nextElement))
+                {
+                    // TRƯỜNG HỢP 2: Pap → Reducing → Sprinkler (không có Pipe 40)
+                    
+                    // Kiểm tra và căn chỉnh Pap với Reducing
+                    if (papConn != null && nextConn != null && !IsAlignedVertically(papConn.Origin, nextConn.Origin))
+                    {
+                        result.ElementsNeedAlignment.Add(nextElement);
+                        bool aligned = AlignTwoElements(doc, pap, nextElement, papConn, nextConn);
+                        if (aligned)
+                        {
+                            result.ElementsAligned.Add(nextElement);
+                        }
+                    }
+
+                    // Tiếp tục với Sprinkler
+                    Element sprinkler = GetDownwardConnectedElement(nextElement);
+                    if (sprinkler != null && IsSprinkler(sprinkler))
+                    {
+                        var (redConn, sprConn) = GetConnectingConnectors(nextElement, sprinkler);
+                        if (redConn != null && sprConn != null && !IsAlignedVertically(redConn.Origin, sprConn.Origin))
+                        {
+                            result.ElementsNeedAlignment.Add(sprinkler);
+                            bool aligned = AlignTwoElements(doc, nextElement, sprinkler, redConn, sprConn);
+                            if (aligned)
+                            {
+                                result.ElementsAligned.Add(sprinkler);
+                            }
+                        }
+                    }
+                }
+                else if (IsSprinkler(nextElement))
+                {
+                    // TRƯỜNG HỢP 3: Pap → Sprinkler trực tiếp
+                    if (papConn != null && nextConn != null && !IsAlignedVertically(papConn.Origin, nextConn.Origin))
+                    {
+                        result.ElementsNeedAlignment.Add(nextElement);
+                        bool aligned = AlignTwoElements(doc, pap, nextElement, papConn, nextConn);
+                        if (aligned)
+                        {
+                            result.ElementsAligned.Add(nextElement);
+                        }
+                    }
+                }
+
+                // Bước 3: Quay cả cụm quanh tâm quay nếu cần (để vector Pap-Sprinkler thẳng đứng)
+                if (rotationCenter != null && mainPipe != null)
+                {
+                    Element sprinkler = FindSprinklerInChain(pap, doc);
+                    if (sprinkler != null)
+                    {
+                        XYZ papPos = GetElementLocation(pap);
+                        XYZ sprPos = GetElementLocation(sprinkler);
+
+                        if (papPos != null && sprPos != null && !IsParallelToZAxis(papPos, sprPos))
+                        {
+                            double angle = GetAngleWithZAxis(papPos, sprPos);
+                            double angleDegrees = angle * 180.0 / Math.PI;
+
+                            if (angleDegrees > 0.1)
+                            {
+                                result.RotationApplied = true;
+                                result.RotationAngle = angleDegrees;
+
+                                RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe);
+                            }
+                        }
+                    }
+                }
+
+                result.Success = true;
+                if (result.ElementsNeedAlignment.Count == 0)
+                {
+                    result.AlreadyAligned = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                result.ErrorMessage = ex.Message;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Tìm Pipe có đường kính cụ thể kết nối với element
+        /// </summary>
+        public static Pipe FindPipeByDiameter(Element element, double diameterMM, double toleranceMM = 5.0)
+        {
+            var connectedElements = GetConnectedElements(element);
+            
+            foreach (var connected in connectedElements)
+            {
+                if (connected is Pipe pipe)
+                {
+                    double pipeDiameter = GetPipeDiameterMM(pipe);
+                    if (Math.Abs(pipeDiameter - diameterMM) <= toleranceMM)
+                    {
+                        return pipe;
+                    }
+                }
+            }
+            
+            return null;
         }
 
         /// <summary>

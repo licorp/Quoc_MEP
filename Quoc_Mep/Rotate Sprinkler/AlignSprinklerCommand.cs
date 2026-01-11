@@ -25,56 +25,106 @@ namespace Quoc_MEP
 
             try
             {
-                // Bước 1: Chọn Pap (Pipe Accessory Point) làm chuẩn
-                Reference papRef = uidoc.Selection.PickObject(
+                // Bước 1: Chọn nhiều Pap (Pipe Accessory Point)
+                IList<Reference> papRefs = uidoc.Selection.PickObjects(
                     ObjectType.Element,
                     new PapSelectionFilter(),
-                    "Chọn Pap (Pipe Fitting/Accessory) làm chuẩn:");
+                    "Chọn các cụm Pap-Pipe-Sprinkler cần căn chỉnh (có thể chọn nhiều):");
 
-                if (papRef == null)
+                if (papRefs == null || papRefs.Count == 0)
                 {
-                    message = "Không chọn được Pap";
+                    message = "Không chọn được Pap nào";
                     return Result.Cancelled;
                 }
 
-                Element pap = doc.GetElement(papRef);
+                List<Element> paps = new List<Element>();
+                foreach (Reference papRef in papRefs)
+                {
+                    Element pap = doc.GetElement(papRef);
+                    if (pap != null)
+                    {
+                        paps.Add(pap);
+                    }
+                }
 
-                // Bước 2: Kiểm tra và căn chỉnh
+                // Bước 2: Kiểm tra và căn chỉnh từng cụm
                 using (Transaction trans = new Transaction(doc, "Căn chỉnh Sprinkler thẳng hàng với Pap"))
                 {
                     trans.Start();
 
                     try
                     {
-                        // Thực hiện căn chỉnh XY + Quay song song Z
-                        AlignmentResult result = SprinklerAlignmentHelper.AlignAndRotateToZ(doc, pap);
+                        int totalSuccess = 0;
+                        int totalFailed = 0;
+                        int totalAlreadyAligned = 0;
+                        int totalRotated = 0;
+                        List<string> errors = new List<string>();
 
-                        if (result.Success)
+                        foreach (Element pap in paps)
                         {
-                            trans.Commit();
+                            // Thực hiện căn chỉnh theo chuỗi: Pap → Pipe/Reducing → Sprinkler
+                            AlignmentResult result = SprinklerAlignmentHelper.AlignChainFromPap(doc, pap);
 
-                            if (result.AlreadyAligned && !result.RotationApplied)
+                            if (result.Success)
                             {
-                                TaskDialog.Show("Kết quả", "Các element đã thẳng hàng với Pap và song song trục Z, không cần căn chỉnh.");
+                                totalSuccess++;
+                                if (result.AlreadyAligned && !result.RotationApplied)
+                                {
+                                    totalAlreadyAligned++;
+                                }
+                                if (result.RotationApplied)
+                                {
+                                    totalRotated++;
+                                }
                             }
                             else
                             {
-                                string msg = $"Đã căn chỉnh thành công {result.ElementsAligned.Count} element.";
-                                if (result.RotationApplied)
+                                totalFailed++;
+                                if (!string.IsNullOrEmpty(result.ErrorMessage))
                                 {
-                                    msg += $"\nĐã quay cụm element {result.RotationAngle:F2}° để song song với trục Z.";
+                                    errors.Add($"Pap {pap.Id}: {result.ErrorMessage}");
                                 }
-                                TaskDialog.Show("Kết quả", msg);
                             }
+                        }
+
+                        if (totalSuccess > 0)
+                        {
+                            trans.Commit();
+
+                            string msg = $"Đã xử lý {paps.Count} cụm Pap-Pipe-Sprinkler:\n";
+                            msg += $"✓ Thành công: {totalSuccess}\n";
+                            if (totalAlreadyAligned > 0)
+                            {
+                                msg += $"  - Đã thẳng hàng sẵn: {totalAlreadyAligned}\n";
+                            }
+                            if (totalRotated > 0)
+                            {
+                                msg += $"  - Đã quay để căn chỉnh: {totalRotated}\n";
+                            }
+                            if (totalFailed > 0)
+                            {
+                                msg += $"✗ Thất bại: {totalFailed}";
+                                if (errors.Count > 0)
+                                {
+                                    msg += "\n\nChi tiết lỗi:\n" + string.Join("\n", errors.Take(5));
+                                    if (errors.Count > 5)
+                                    {
+                                        msg += $"\n... và {errors.Count - 5} lỗi khác";
+                                    }
+                                }
+                            }
+                            TaskDialog.Show("Kết quả", msg);
 
                             return Result.Succeeded;
                         }
                         else
                         {
                             trans.RollBack();
-                            message = !string.IsNullOrEmpty(result.ErrorMessage) 
-                                ? result.ErrorMessage 
-                                : "Không thể căn chỉnh. Vui lòng kiểm tra lại các kết nối.";
+                            message = "Không thể căn chỉnh được cụm nào.\n";
+                            if (errors.Count > 0)
+                            {
+                                message += string.Join("\n", errors.Take(3));
+                            }
                             return Result.Failed;
                         }
                     }
