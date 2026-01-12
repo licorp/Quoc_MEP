@@ -950,7 +950,15 @@ namespace Quoc_MEP
                 double dot = projectedPapDir.DotProduct(projectedTargetDir);
                 dot = Math.Max(-1.0, Math.Min(1.0, dot));
                 double angle = Math.Acos(dot);
-                Debug.WriteLine($"[ROTATE] Góc cần quay (radians): {angle:F4}, (degrees): {angle * 180 / Math.PI:F2}°");
+                Debug.WriteLine($"[ROTATE] Góc cần quay ban đầu (radians): {angle:F4}, (degrees): {angle * 180 / Math.PI:F2}°");
+
+                // QUAN TRỌNG: Không được xoay quá 90 độ
+                // Nếu góc > 90°, xoay ngược chiều (180° - angle)
+                if (Math.Abs(angle) > Math.PI / 2)
+                {
+                    angle = Math.PI - angle;
+                    Debug.WriteLine($"[ROTATE] Góc > 90°, đảo lại thành: {angle * 180 / Math.PI:F2}°");
+                }
 
                 // Xác định chiều quay (từ Pap về Target)
                 XYZ crossProduct = projectedPapDir.CrossProduct(projectedTargetDir);
@@ -959,6 +967,8 @@ namespace Quoc_MEP
                     angle = -angle;
                     Debug.WriteLine($"[ROTATE] Đảo chiều quay → {angle * 180 / Math.PI:F2}°");
                 }
+                
+                Debug.WriteLine($"[ROTATE] Góc cuối cùng sẽ xoay: {angle * 180 / Math.PI:F2}°");
 
                 // Nếu góc quá nhỏ, không cần quay nữa
                 if (Math.Abs(angle) < 0.001)
