@@ -55,10 +55,10 @@ namespace Quoc_MEP
                 
                 Debug.WriteLine($"[SIMPLE] Hướng Pap: ({papDirection.X:F3}, {papDirection.Y:F3}, {papDirection.Z:F3})");
                 
-                // Bước 4: Kiểm tra góc với trục Z (thẳng đứng)
-                XYZ verticalDirection = XYZ.BasisZ;
+                // Bước 4: Kiểm tra góc với trục Z (thẳng đứng hướng XUỐNG)
+                XYZ verticalDirection = -XYZ.BasisZ; // Hướng xuống
                 
-                // Kiểm tra góc giữa Pap direction và trục thẳng đứng
+                // Kiểm tra góc giữa Pap direction và trục thẳng đứng hướng xuống
                 double dotProduct = Math.Abs(papDirection.DotProduct(verticalDirection));
                 double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
                 

@@ -856,33 +856,31 @@ namespace Quoc_MEP
                     rotationAxisDirection = XYZ.BasisZ;
                 }
                 
-                // Vector mục tiêu = trục thẳng đứng hướng LÊN (positive Z)
-                // Quan trọng: phải chọn hướng lên, không dùng Math.Abs để tránh xoay ngược
-                XYZ targetVector = XYZ.BasisZ;
+                // Vector mục tiêu = trục thẳng đứng hướng XUỐNG (negative Z)
+                XYZ targetVector = -XYZ.BasisZ; // Hướng xuống dưới
                 
                 // Kiểm tra xem Pap đang hướng lên hay xuống
                 double zComponent = papDirection.DotProduct(XYZ.BasisZ);
                 Debug.WriteLine($"[ROTATE] Thành phần Z của Pap direction: {zComponent:F3} (>0=lên, <0=xuống)");
                 
-                // Nếu Pap đang hướng xuống (Z âm), cần đảm bảo target là hướng lên
-                if (zComponent < 0)
+                // Nếu Pap đang hướng lên (Z dương), cần xoay để hướng xuống
+                if (zComponent > 0)
                 {
-                    Debug.WriteLine("[ROTATE] Pap đang hướng xuống, sẽ xoay để hướng lên");
+                    Debug.WriteLine("[ROTATE] Pap đang hướng lên, sẽ xoay để hướng xuống");
                 }
                 
-                Debug.WriteLine($"[ROTATE] Vector mục tiêu (trục Z hướng lên): ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
+                Debug.WriteLine($"[ROTATE] Vector mục tiêu (trục Z hướng xuống): ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
                 
                 // Kiểm tra xem Pap đã song song với target vector chưa
-                // KHÔNG dùng Math.Abs() vì cần phân biệt hướng lên/xuống
                 double dotProduct = papDirection.DotProduct(targetVector);
                 double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, Math.Abs(dotProduct)))) * 180.0 / Math.PI;
                 
                 Debug.WriteLine($"[ROTATE] Góc lệch với trục thẳng đứng: {angleDegrees:F2}° (dotProduct: {dotProduct:F3})");
 
-                // Nếu đã thẳng đứng VÀ hướng lên (góc < 0.05 độ và Z > 0), không cần quay
+                // Nếu đã thẳng đứng VÀ hướng xuống (góc < 0.05 độ và dotProduct > 0), không cần quay
                 if (angleDegrees < 0.05 && dotProduct > 0)
                 {
-                    Debug.WriteLine("[ROTATE] Pap đã thẳng đứng và hướng lên, không cần quay");
+                    Debug.WriteLine("[ROTATE] Pap đã thẳng đứng và hướng xuống, không cần quay");
                     return true;
                 }
 
