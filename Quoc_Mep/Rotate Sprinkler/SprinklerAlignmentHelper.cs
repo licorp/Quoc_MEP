@@ -891,14 +891,14 @@ namespace Quoc_MEP
                 }
                 projectedTargetDir = projectedTargetDir.Normalize();
 
-                // Tính góc cần quay
+                // Tính góc cần quay (từ Pap về Target)
                 double dot = projectedPapDir.DotProduct(projectedTargetDir);
                 dot = Math.Max(-1.0, Math.Min(1.0, dot));
                 double angle = Math.Acos(dot);
                 Debug.WriteLine($"[ROTATE] Góc cần quay (radians): {angle:F4}, (degrees): {angle * 180 / Math.PI:F2}°");
 
-                // Xác định chiều quay
-                XYZ crossProduct = projectedTargetDir.CrossProduct(projectedPapDir);
+                // Xác định chiều quay (từ Pap về Target)
+                XYZ crossProduct = projectedPapDir.CrossProduct(projectedTargetDir);
                 if (crossProduct.DotProduct(rotationAxisDirection) < 0)
                 {
                     angle = -angle;
