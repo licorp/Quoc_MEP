@@ -268,37 +268,5 @@ namespace Quoc_MEP
                 return null;
             }
         }
-        
-        /// <summary>
-        /// Lấy vị trí connector của Pap kết nối với ống
-        /// </summary>
-        private static XYZ GetPapConnectorOrigin(Element pap, Pipe pipe)
-        {
-            try
-            {
-                ConnectorManager papCM = GetConnectorManager(pap);
-                if (papCM == null) return null;
-                
-                foreach (Connector papConn in papCM.Connectors)
-                {
-                    if (papConn.IsConnected)
-                    {
-                        foreach (Connector connectedConn in papConn.AllRefs)
-                        {
-                            if (connectedConn.Owner.Id == pipe.Id)
-                            {
-                                return papConn.Origin;
-                            }
-                        }
-                    }
-                }
-                
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
     }
 }
