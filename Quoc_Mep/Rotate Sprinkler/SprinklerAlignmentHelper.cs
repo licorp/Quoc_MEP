@@ -11,7 +11,7 @@ namespace Quoc_MEP
     /// Helper class để xử lý việc căn chỉnh Sprinkler thẳng hàng với Pap
     /// Kiểm tra theo trục Z (vertical) - tức là X-Y phải khớp nhau
     /// </summary>
-    public static class SprinklerAlignmentHelper
+    public static partial class SprinklerAlignmentHelper
     {
         // Tolerance mặc định: 1mm = 1/304.8 feet
         private const double DEFAULT_TOLERANCE = 1.0 / 304.8;
