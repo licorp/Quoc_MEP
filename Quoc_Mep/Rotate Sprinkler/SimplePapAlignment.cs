@@ -55,24 +55,14 @@ namespace Quoc_MEP
                 
                 Debug.WriteLine($"[SIMPLE] Hướng Pap: ({papDirection.X:F3}, {papDirection.Y:F3}, {papDirection.Z:F3})");
                 
-                // Bước 4: Lấy hướng của center line ống 65 (đường màu xanh lá)
-                // Đây là vector mà Pap phải song song với nó
-                Line pipeCenterLine = GetPipeCenterLine(pipe65);
-                if (pipeCenterLine == null)
-                {
-                    result.ErrorMessage = "Không lấy được center line của ống 65";
-                    Debug.WriteLine($"[SIMPLE] {result.ErrorMessage}");
-                    return result;
-                }
+                // Bước 4: Kiểm tra góc với trục Z (thẳng đứng)
+                XYZ verticalDirection = XYZ.BasisZ;
                 
-                XYZ pipeDirection = (pipeCenterLine.GetEndPoint(1) - pipeCenterLine.GetEndPoint(0)).Normalize();
-                Debug.WriteLine($"[SIMPLE] Hướng center line ống 65: ({pipeDirection.X:F3}, {pipeDirection.Y:F3}, {pipeDirection.Z:F3})");
-                
-                // Kiểm tra góc giữa Pap direction và pipe direction
-                double dotProduct = Math.Abs(papDirection.DotProduct(pipeDirection));
+                // Kiểm tra góc giữa Pap direction và trục thẳng đứng
+                double dotProduct = Math.Abs(papDirection.DotProduct(verticalDirection));
                 double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
                 
-                Debug.WriteLine($"[SIMPLE] Góc lệch với center line ống: {angleDegrees:F2}°");
+                Debug.WriteLine($"[SIMPLE] Góc lệch với trục thẳng đứng: {angleDegrees:F2}°");
                 
                 // Nếu đã thẳng đứng (góc < 1 độ), không cần quay
                 if (angleDegrees < 1.0)

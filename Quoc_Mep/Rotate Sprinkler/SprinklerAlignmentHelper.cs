@@ -856,20 +856,20 @@ namespace Quoc_MEP
                     rotationAxisDirection = XYZ.BasisZ;
                 }
                 
-                // Vector mục tiêu = hướng của center line ống (đường màu xanh lá)
-                XYZ targetVector = rotationAxisDirection;
-                Debug.WriteLine($"[ROTATE] Vector mục tiêu (center line ống): ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
+                // Vector mục tiêu = trục thẳng đứng (Z axis)
+                XYZ targetVector = XYZ.BasisZ;
+                Debug.WriteLine($"[ROTATE] Vector mục tiêu (trục Z): ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
                 
                 // Kiểm tra xem Pap đã song song với target vector chưa
                 double dotProduct = Math.Abs(papDirection.DotProduct(targetVector));
                 double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
                 
-                Debug.WriteLine($"[ROTATE] Góc lệch với center line ống: {angleDegrees:F2}°");
+                Debug.WriteLine($"[ROTATE] Góc lệch với trục thẳng đứng: {angleDegrees:F2}°");
 
-                // Nếu đã song song (góc < 0.1 độ), không cần quay
+                // Nếu đã thẳng đứng (góc < 0.1 độ), không cần quay
                 if (angleDegrees < 0.1)
                 {
-                    Debug.WriteLine("[ROTATE] Pap đã song song với center line ống, không cần quay");
+                    Debug.WriteLine("[ROTATE] Pap đã thẳng đứng, không cần quay");
                     return true;
                 }
 
