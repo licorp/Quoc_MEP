@@ -63,8 +63,8 @@ namespace Quoc_MEP
 
                         foreach (Element pap in paps)
                         {
-                            // Thực hiện căn chỉnh theo chuỗi: Pap → Pipe/Reducing → Sprinkler
-                            AlignmentResult result = SprinklerAlignmentHelper.AlignChainFromPap(doc, pap);
+                            // Chỉ kiểm tra Pap với ống 65mm
+                            AlignmentResult result = SprinklerAlignmentHelper.AlignPapSimple(doc, pap);
 
                             if (result.Success)
                             {
@@ -93,11 +93,11 @@ namespace Quoc_MEP
                         {
                             trans.Commit();
 
-                            string msg = $"Đã xử lý {paps.Count} cụm Pap-Pipe-Sprinkler:\n";
+                            string msg = $"Đã xử lý {paps.Count} Pap:\n";
                             msg += $"✓ Thành công: {totalSuccess}\n";
                             if (totalAlreadyAligned > 0)
                             {
-                                msg += $"  - Đã thẳng hàng sẵn: {totalAlreadyAligned}\n";
+                                msg += $"  - Đã thẳng đứng sẵn: {totalAlreadyAligned}\n";
                             }
                             if (totalRotated > 0)
                             {
