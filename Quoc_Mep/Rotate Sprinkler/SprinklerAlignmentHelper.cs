@@ -866,12 +866,56 @@ namespace Quoc_MEP
                 
                 Debug.WriteLine($"[ROTATE] Góc lệch với trục thẳng đứng: {angleDegrees:F2}°");
 
-                // Nếu đã thẳng đứng (góc < 0.1 độ), không cần quay
-                if (angleDegrees < 0.1)
+                // Nếu đã thẳng đứng (góc < 0.05 độ), không cần quay
+                if (angleDegrees < 0.05)
                 {
                     Debug.WriteLine("[ROTATE] Pap đã thẳng đứng, không cần quay");
                     return true;
                 }
+
+                // Lặp tối đa 3 lần để đạt độ chính xác cao
+                int maxIterations = 3;
+                
+                // CHỈ QUAY PAP - không disconnect vì Pap là TAP connection
+                var elementsToRotate = new List<ElementId> { pap.Id };
+                
+                // Unpin pap (chỉ làm 1 lần)
+                ConnectionHelper.UnpinElementIfPinned(doc, pap);
+
+                // Xóa dimensions trước khi quay (chỉ làm 1 lần)
+                Debug.WriteLine("[ROTATE] Đang xóa dimensions liên quan...");
+                var deletedDimensions = DeleteDimensionsForElements(doc, elementsToRotate);
+                dimensionsDeleted = deletedDimensions.Count;
+                if (dimensionsDeleted > 0)
+                {
+                    Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions");
+                }
+                
+                for (int iteration = 0; iteration < maxIterations; iteration++)
+                {
+                    Debug.WriteLine($"[ROTATE] === Vòng lặp {iteration + 1}/{maxIterations} ===");
+                    
+                    // Cập nhật lại hướng Pap sau mỗi lần xoay
+                    if (iteration > 0)
+                    {
+                        papDirection = GetPapDirection(pap);
+                        if (papDirection == null || papDirection.IsZeroLength())
+                        {
+                            Debug.WriteLine("[ROTATE] Không xác định được hướng Pap sau xoay");
+                            break;
+                        }
+                        
+                        // Kiểm tra lại góc
+                        dotProduct = Math.Abs(papDirection.DotProduct(targetVector));
+                        angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
+                        Debug.WriteLine($"[ROTATE] Góc còn lại: {angleDegrees:F4}°");
+                        
+                        if (angleDegrees < 0.05)
+                        {
+                            Debug.WriteLine("[ROTATE] Đã đạt độ chính xác mong muốn!");
+                            break;
+                        }
+                    }
 
                 // Project hướng Pap lên mặt phẳng vuông góc với trục quay
                 XYZ projectedPapDir = papDirection - rotationAxisDirection * papDirection.DotProduct(rotationAxisDirection);
@@ -905,36 +949,25 @@ namespace Quoc_MEP
                     Debug.WriteLine($"[ROTATE] Đảo chiều quay → {angle * 180 / Math.PI:F2}°");
                 }
 
-                // Nếu góc quá nhỏ, không cần quay
+                // Nếu góc quá nhỏ, không cần quay nữa
                 if (Math.Abs(angle) < 0.001)
                 {
-                    Debug.WriteLine("[ROTATE] Góc quá nhỏ, không cần quay");
-                    return true;
+                    Debug.WriteLine("[ROTATE] Góc quá nhỏ, kết thúc iteration");
+                    break;
                 }
 
                 // Tạo trục quay qua tâm quay (trục của ống 65)
                 Line rotationAxis = Line.CreateBound(rotationCenter, rotationCenter + rotationAxisDirection);
-                Debug.WriteLine($"[ROTATE] Tâm quay: ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
-
-                // CHỈ QUAY PAP - không disconnect vì Pap là TAP connection
-                var elementsToRotate = new List<ElementId> { pap.Id };
-                
-                // Unpin pap
-                ConnectionHelper.UnpinElementIfPinned(doc, pap);
-
-                // Xóa dimensions trước khi quay
-                Debug.WriteLine("[ROTATE] Đang xóa dimensions liên quan...");
-                var deletedDimensions = DeleteDimensionsForElements(doc, elementsToRotate);
-                dimensionsDeleted = deletedDimensions.Count;
-                if (dimensionsDeleted > 0)
+                if (iteration == 0)
                 {
-                    Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions");
+                    Debug.WriteLine($"[ROTATE] Tâm quay: ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
                 }
 
-                // Quay Pap quanh center line của ống 65 (dùng RotateElements giống folder Rotate)
-                Debug.WriteLine($"[ROTATE] Thực hiện xoay Pap {angle * 180 / Math.PI:F2}° quanh center line ống 65...");
-                ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
-                Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
+                    // Thực hiện xoay Pap quanh center line của ống 65
+                    Debug.WriteLine($"[ROTATE] Thực hiện xoay Pap {angle * 180 / Math.PI:F2}° quanh center line ống 65...");
+                    ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
+                    Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
+                } // end iteration loop
 
                 return true;
             }
