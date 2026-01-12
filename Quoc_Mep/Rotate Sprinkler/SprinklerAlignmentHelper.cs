@@ -1037,7 +1037,7 @@ namespace Quoc_MEP
                             result.RotationAngle = angleDegrees;
 
                             int dimsDeleted;
-                            bool rotated = RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe, out dimsDeleted);
+                            bool rotated = RotatePapToVertical(doc, pap, rotationCenter, mainPipe, out dimsDeleted);
                             result.DimensionsDeleted = dimsDeleted;
                             
                             if (!rotated)
@@ -1428,7 +1428,7 @@ namespace Quoc_MEP
                                 result.RotationAngle = angleDegrees;
 
                                 int dimsDeleted;
-                                RotateAssemblyToAlignWithZ(doc, pap, rotationCenter, mainPipe, out dimsDeleted);
+                                RotatePapToVertical(doc, pap, rotationCenter, mainPipe, out dimsDeleted);
                                 result.DimensionsDeleted += dimsDeleted;
                             }
                         }
