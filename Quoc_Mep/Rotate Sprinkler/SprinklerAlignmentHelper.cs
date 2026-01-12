@@ -808,113 +808,98 @@ namespace Quoc_MEP
         }
 
         /// <summary>
-        /// Quay cả cụm Pap-Pipe-Sprinkler quanh trục của ống chính
-        /// để vector Pap-Sprinkler thẳng đứng (song song với mặt phẳng vuông góc với ống chính)
+        /// Quay Pap để hướng của nó thẳng đứng (song song với trục Z)
+        /// Đơn giản: Chỉ kiểm tra hướng Pap với trục Z, nếu lệch thì quay
         /// </summary>
         /// <param name="doc">Document</param>
         /// <param name="pap">Pap element</param>
-        /// <param name="rotationCenter">Tâm quay (giao điểm center line ống chính và vector Pap)</param>
-        /// <param name="mainPipe">Ống chính để lấy trục quay</param>
+        /// <param name="rotationCenter">Tâm quay (giao điểm của ống 65 với Pap)</param>
+        /// <param name="mainPipe">Ống chính (ống 65) để lấy trục quay</param>
         /// <param name="dimensionsDeleted">Output: số dimensions đã xóa</param>
         /// <returns>True nếu quay thành công</returns>
-        public static bool RotateAssemblyToAlignWithZ(Document doc, Element pap, XYZ rotationCenter, Pipe mainPipe, out int dimensionsDeleted)
+        public static bool RotatePapToVertical(Document doc, Element pap, XYZ rotationCenter, Pipe mainPipe, out int dimensionsDeleted)
         {
             dimensionsDeleted = 0;
             try
             {
-                // Tìm Sprinkler trong chuỗi
-                Element sprinkler = FindSprinklerInChain(pap, doc);
-                if (sprinkler == null)
-                {
-                    return false;
-                }
-
-                // Lấy vị trí của Pap và Sprinkler
-                XYZ papPosition = GetElementLocation(pap);
-                XYZ sprinklerPosition = GetElementLocation(sprinkler);
-
-                if (papPosition == null || sprinklerPosition == null)
-                {
-                    return false;
-                }
-
-                // Kiểm tra đã song song Z chưa
-                if (IsParallelToZAxis(papPosition, sprinklerPosition))
-                {
-                    return true; // Đã song song, không cần quay
-                }
-
-                // Tính vector hiện tại từ Pap đến Sprinkler
-                XYZ currentVector = sprinklerPosition - papPosition;
-                if (currentVector.IsZeroLength()) return true;
-
-                // Xác định trục quay
-                XYZ rotationAxisDirection;
+                Debug.WriteLine($"[ROTATE] Bắt đầu quay Pap {pap.Id}");
                 
+                // Lấy hướng của Pap
+                XYZ papDirection = GetPapDirection(pap);
+                if (papDirection == null || papDirection.IsZeroLength())
+                {
+                    Debug.WriteLine("[ROTATE] Không xác định được hướng Pap");
+                    return false;
+                }
+
+                Debug.WriteLine($"[ROTATE] Hướng Pap: ({papDirection.X:F3}, {papDirection.Y:F3}, {papDirection.Z:F3})");
+
+                // Kiểm tra xem Pap đã thẳng đứng chưa (song song với trục Z)
+                XYZ zAxis = XYZ.BasisZ;
+                double dotProduct = Math.Abs(papDirection.DotProduct(zAxis));
+                double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
+                
+                Debug.WriteLine($"[ROTATE] Góc lệch với trục Z: {angleDegrees:F2}°");
+
+                // Nếu đã thẳng đứng (góc < 0.1 độ), không cần quay
+                if (angleDegrees < 0.1)
+                {
+                    Debug.WriteLine("[ROTATE] Pap đã thẳng đứng, không cần quay");
+                    return true;
+                }
+
+                // Xác định trục quay = trục của ống 65 (ống chính)
+                XYZ rotationAxisDirection;
                 if (mainPipe != null)
                 {
-                    // Dùng center line của ống chính làm trục quay
                     Line pipeCenterLine = GetPipeCenterLine(mainPipe);
                     if (pipeCenterLine != null)
                     {
                         rotationAxisDirection = (pipeCenterLine.GetEndPoint(1) - pipeCenterLine.GetEndPoint(0)).Normalize();
+                        Debug.WriteLine($"[ROTATE] Trục quay từ ống 65: ({rotationAxisDirection.X:F3}, {rotationAxisDirection.Y:F3}, {rotationAxisDirection.Z:F3})");
                     }
                     else
                     {
-                        rotationAxisDirection = XYZ.BasisZ; // Fallback
+                        Debug.WriteLine("[ROTATE] Không lấy được center line ống, dùng trục Z");
+                        rotationAxisDirection = XYZ.BasisZ;
                     }
                 }
                 else
                 {
-                    rotationAxisDirection = XYZ.BasisZ; // Mặc định là trục Z
+                    Debug.WriteLine("[ROTATE] Không có ống chính, dùng trục Z");
+                    rotationAxisDirection = XYZ.BasisZ;
                 }
 
-                // Project vector Pap-Sprinkler lên mặt phẳng vuông góc với trục quay
-                // Để tính góc cần quay
-                XYZ projectedVector = currentVector - rotationAxisDirection * currentVector.DotProduct(rotationAxisDirection);
-                
-                if (projectedVector.IsZeroLength())
+                // Project hướng Pap lên mặt phẳng vuông góc với trục quay
+                XYZ projectedPapDir = papDirection - rotationAxisDirection * papDirection.DotProduct(rotationAxisDirection);
+                if (projectedPapDir.IsZeroLength())
                 {
-                    return true; // Đã thẳng hàng
+                    Debug.WriteLine("[ROTATE] Hướng Pap đã song song với trục quay");
+                    return true;
                 }
+                projectedPapDir = projectedPapDir.Normalize();
 
-                // Tính góc giữa projected vector và phương thẳng đứng (Z)
-                // Vector mục tiêu sau khi project cũng phải là Z (thẳng đứng)
-                XYZ targetDirection = XYZ.BasisZ - rotationAxisDirection * XYZ.BasisZ.DotProduct(rotationAxisDirection);
-                
+                // Vector mục tiêu = trục Z projected lên cùng mặt phẳng
+                XYZ targetDirection = zAxis - rotationAxisDirection * zAxis.DotProduct(rotationAxisDirection);
                 if (targetDirection.IsZeroLength())
                 {
-                    // Nếu ống chính đã thẳng đứng, dùng hướng Y làm target
-                    targetDirection = XYZ.BasisY - rotationAxisDirection * XYZ.BasisY.DotProduct(rotationAxisDirection);
+                    Debug.WriteLine("[ROTATE] Trục quay trùng với trục Z");
+                    return true;
                 }
-                
-                if (!targetDirection.IsZeroLength())
-                {
-                    targetDirection = targetDirection.Normalize();
-                }
-                else
-                {
-                    return true; // Không thể xác định target
-                }
+                targetDirection = targetDirection.Normalize();
 
-                projectedVector = projectedVector.Normalize();
+                // Tính góc cần quay
+                double dot = projectedPapDir.DotProduct(targetDirection);
+                dot = Math.Max(-1.0, Math.Min(1.0, dot));
+                double angle = Math.Acos(dot);
+                Debug.WriteLine($"[ROTATE] Góc cần quay (radians): {angle:F4}, (degrees): {angle * 180 / Math.PI:F2}°");
 
-                // Tính góc giữa hai vector
-                double dotProduct = projectedVector.DotProduct(targetDirection);
-                dotProduct = Math.Max(-1.0, Math.Min(1.0, dotProduct)); // Clamp
-                double angle = Math.Acos(dotProduct);
-                Debug.WriteLine($"[ROTATE] Góc ban đầu (radians): {angle:F4}, (degrees): {angle * 180 / Math.PI:F2}°");
-
-                // Xác định hướng quay (chiều dương hay âm)
-                // Đảo ngược: dùng targetDirection.CrossProduct(projectedVector) thay vì projectedVector.CrossProduct(targetDirection)
-                XYZ crossProduct = targetDirection.CrossProduct(projectedVector);
-                Debug.WriteLine($"[ROTATE] Cross Product: ({crossProduct.X:F4}, {crossProduct.Y:F4}, {crossProduct.Z:F4})");
-                Debug.WriteLine($"[ROTATE] Dot với rotationAxis: {crossProduct.DotProduct(rotationAxisDirection):F4}");
-                
+                // Xác định chiều quay
+                XYZ crossProduct = targetDirection.CrossProduct(projectedPapDir);
                 if (crossProduct.DotProduct(rotationAxisDirection) < 0)
                 {
                     angle = -angle;
-                    Debug.WriteLine($"[ROTATE] Đảo ngược góc → {angle * 180 / Math.PI:F2}°");
+                    Debug.WriteLine($"[ROTATE] Đảo chiều quay → {angle * 180 / Math.PI:F2}°");
                 }
 
                 // Nếu góc quá nhỏ, không cần quay
@@ -924,29 +909,26 @@ namespace Quoc_MEP
                     return true;
                 }
 
-                // Tạo trục quay (đường thẳng đi qua tâm quay, song song với center line ống chính)
+                // Tạo trục quay qua tâm quay
                 Line rotationAxis = Line.CreateBound(rotationCenter, rotationCenter + rotationAxisDirection);
-                Debug.WriteLine($"[ROTATE] Trục quay: từ ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3}) hướng ({rotationAxisDirection.X:F3}, {rotationAxisDirection.Y:F3}, {rotationAxisDirection.Z:F3})");
+                Debug.WriteLine($"[ROTATE] Tâm quay: ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
 
-                // CHỈ QUAY PAP THÔI - Không quay pipe và sprinkler
-                var elementsToRotate = new List<ElementId>();
-                elementsToRotate.Add(pap.Id);
-
-                Debug.WriteLine($"[ROTATE] Chỉ xoay Pap (1 element)");
+                // CHỈ QUAY PAP
+                var elementsToRotate = new List<ElementId> { pap.Id };
                 
                 // Unpin pap
                 ConnectionHelper.UnpinElementIfPinned(doc, pap);
 
-                // XÓA DIMENSIONS TRƯỚC KHI XOAY để tránh lỗi "References are no longer parallel"
+                // Xóa dimensions trước khi quay
                 Debug.WriteLine("[ROTATE] Đang xóa dimensions liên quan...");
                 var deletedDimensions = DeleteDimensionsForElements(doc, elementsToRotate);
                 dimensionsDeleted = deletedDimensions.Count;
                 if (dimensionsDeleted > 0)
                 {
-                    Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions để tránh lỗi");
+                    Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions");
                 }
 
-                // Quay chỉ Pap quanh trục của ống chính
+                // Quay Pap
                 Debug.WriteLine($"[ROTATE] Thực hiện xoay Pap {angle * 180 / Math.PI:F2}°...");
                 ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
                 Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
@@ -956,6 +938,54 @@ namespace Quoc_MEP
             catch
             {
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Lấy hướng của Pap từ connector
+        /// </summary>
+        private static XYZ GetPapDirection(Element pap)
+        {
+            try
+            {
+                // Lấy connector của Pap
+                ConnectorSet connectors = null;
+                if (pap is FamilyInstance fi)
+                {
+                    connectors = fi.MEPModel?.ConnectorManager?.Connectors;
+                }
+                
+                if (connectors != null)
+                {
+                    foreach (Connector conn in connectors)
+                    {
+                        // Lấy hướng từ connector
+                        if (conn.CoordinateSystem != null)
+                        {
+                            return conn.CoordinateSystem.BasisZ; // Hướng chính của connector
+                        }
+                    }
+                }
+                
+                // Fallback: Lấy từ geometry
+                Options geoOptions = new Options { DetailLevel = ViewDetailLevel.Fine };
+                GeometryElement geoElement = pap.get_Geometry(geoOptions);
+                if (geoElement != null)
+                {
+                    foreach (GeometryObject geoObj in geoElement)
+                    {
+                        if (geoObj is Line line)
+                        {
+                            return (line.GetEndPoint(1) - line.GetEndPoint(0)).Normalize();
+                        }
+                    }
+                }
+                
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
 
