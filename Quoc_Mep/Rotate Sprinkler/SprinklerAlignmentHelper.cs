@@ -834,17 +834,27 @@ namespace Quoc_MEP
 
                 Debug.WriteLine($"[ROTATE] Hướng Pap: ({papDirection.X:F3}, {papDirection.Y:F3}, {papDirection.Z:F3})");
 
-                // Kiểm tra xem Pap đã thẳng đứng chưa (song song với trục Z)
-                XYZ zAxis = XYZ.BasisZ;
-                double dotProduct = Math.Abs(papDirection.DotProduct(zAxis));
+                // Lấy vector mục tiêu: từ center line ống xuống Pap connector
+                XYZ papConnectorOrigin = GetPapConnectorOrigin(pap, mainPipe);
+                if (papConnectorOrigin == null)
+                {
+                    Debug.WriteLine("[ROTATE] Không lấy được vị trí connector Pap");
+                    return false;
+                }
+                
+                XYZ targetVector = (papConnectorOrigin - rotationCenter).Normalize();
+                Debug.WriteLine($"[ROTATE] Vector mục tiêu (từ ống xuống Pap): ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
+                
+                // Kiểm tra xem Pap đã song song với target vector chưa
+                double dotProduct = Math.Abs(papDirection.DotProduct(targetVector));
                 double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
                 
-                Debug.WriteLine($"[ROTATE] Góc lệch với trục Z: {angleDegrees:F2}°");
+                Debug.WriteLine($"[ROTATE] Góc lệch với vector mục tiêu: {angleDegrees:F2}°");
 
-                // Nếu đã thẳng đứng (góc < 0.1 độ), không cần quay
+                // Nếu đã song song (góc < 0.1 độ), không cần quay
                 if (angleDegrees < 0.1)
                 {
-                    Debug.WriteLine("[ROTATE] Pap đã thẳng đứng, không cần quay");
+                    Debug.WriteLine("[ROTATE] Pap đã song song với vector mục tiêu, không cần quay");
                     return true;
                 }
 
@@ -879,23 +889,23 @@ namespace Quoc_MEP
                 }
                 projectedPapDir = projectedPapDir.Normalize();
 
-                // Vector mục tiêu = trục Z projected lên cùng mặt phẳng
-                XYZ targetDirection = zAxis - rotationAxisDirection * zAxis.DotProduct(rotationAxisDirection);
-                if (targetDirection.IsZeroLength())
+                // Project target vector lên cùng mặt phẳng
+                XYZ projectedTargetDir = targetVector - rotationAxisDirection * targetVector.DotProduct(rotationAxisDirection);
+                if (projectedTargetDir.IsZeroLength())
                 {
-                    Debug.WriteLine("[ROTATE] Trục quay trùng với trục Z");
+                    Debug.WriteLine("[ROTATE] Target vector song song với trục quay");
                     return true;
                 }
-                targetDirection = targetDirection.Normalize();
+                projectedTargetDir = projectedTargetDir.Normalize();
 
                 // Tính góc cần quay
-                double dot = projectedPapDir.DotProduct(targetDirection);
+                double dot = projectedPapDir.DotProduct(projectedTargetDir);
                 dot = Math.Max(-1.0, Math.Min(1.0, dot));
                 double angle = Math.Acos(dot);
                 Debug.WriteLine($"[ROTATE] Góc cần quay (radians): {angle:F4}, (degrees): {angle * 180 / Math.PI:F2}°");
 
                 // Xác định chiều quay
-                XYZ crossProduct = targetDirection.CrossProduct(projectedPapDir);
+                XYZ crossProduct = projectedTargetDir.CrossProduct(projectedPapDir);
                 if (crossProduct.DotProduct(rotationAxisDirection) < 0)
                 {
                     angle = -angle;
@@ -967,6 +977,38 @@ namespace Quoc_MEP
             }
             
             return null;
+        }
+
+        /// <summary>
+        /// Lấy vị trí connector của Pap kết nối với ống
+        /// </summary>
+        private static XYZ GetPapConnectorOrigin(Element pap, Pipe pipe)
+        {
+            try
+            {
+                ConnectorManager papCM = GetConnectorManager(pap);
+                if (papCM == null) return null;
+                
+                foreach (Connector papConn in papCM.Connectors)
+                {
+                    if (papConn.IsConnected)
+                    {
+                        foreach (Connector connectedConn in papConn.AllRefs)
+                        {
+                            if (connectedConn.Owner.Id == pipe.Id)
+                            {
+                                return papConn.Origin;
+                            }
+                        }
+                    }
+                }
+                
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>

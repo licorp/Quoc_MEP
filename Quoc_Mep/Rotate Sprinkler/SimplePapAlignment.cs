@@ -55,12 +55,24 @@ namespace Quoc_MEP
                 
                 Debug.WriteLine($"[SIMPLE] Hướng Pap: ({papDirection.X:F3}, {papDirection.Y:F3}, {papDirection.Z:F3})");
                 
-                // Bước 4: Kiểm tra góc với trục Z (thẳng đứng)
-                XYZ zAxis = XYZ.BasisZ;
-                double dotProduct = Math.Abs(papDirection.DotProduct(zAxis));
+                // Bước 4: Tạo vector từ center line ống 65 hướng xuống đến Pap (đường màu xanh)
+                // Đây là hướng mà Pap phải align
+                XYZ papConnectorOrigin = GetPapConnectorOrigin(pap, pipe65);
+                if (papConnectorOrigin == null)
+                {
+                    result.ErrorMessage = "Không lấy được vị trí connector Pap";
+                    Debug.WriteLine($"[SIMPLE] {result.ErrorMessage}");
+                    return result;
+                }
+                
+                XYZ targetVector = (papConnectorOrigin - rotationCenter).Normalize();
+                Debug.WriteLine($"[SIMPLE] Vector từ ống xuống Pap: ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
+                
+                // Kiểm tra góc giữa Pap direction và target vector
+                double dotProduct = Math.Abs(papDirection.DotProduct(targetVector));
                 double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
                 
-                Debug.WriteLine($"[SIMPLE] Góc lệch với trục Z: {angleDegrees:F2}°");
+                Debug.WriteLine($"[SIMPLE] Góc lệch: {angleDegrees:F2}°");
                 
                 // Nếu đã thẳng đứng (góc < 1 độ), không cần quay
                 if (angleDegrees < 1.0)
@@ -253,6 +265,38 @@ namespace Quoc_MEP
             catch (Exception ex)
             {
                 Debug.WriteLine($"[SIMPLE] GetPapPipeIntersection Exception: {ex.Message}");
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// Lấy vị trí connector của Pap kết nối với ống
+        /// </summary>
+        private static XYZ GetPapConnectorOrigin(Element pap, Pipe pipe)
+        {
+            try
+            {
+                ConnectorManager papCM = GetConnectorManager(pap);
+                if (papCM == null) return null;
+                
+                foreach (Connector papConn in papCM.Connectors)
+                {
+                    if (papConn.IsConnected)
+                    {
+                        foreach (Connector connectedConn in papConn.AllRefs)
+                        {
+                            if (connectedConn.Owner.Id == pipe.Id)
+                            {
+                                return papConn.Origin;
+                            }
+                        }
+                    }
+                }
+                
+                return null;
+            }
+            catch
+            {
                 return null;
             }
         }
