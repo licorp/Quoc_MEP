@@ -928,10 +928,29 @@ namespace Quoc_MEP
                     Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions");
                 }
 
-                // Quay Pap
+                // Quay Pap - SỬ DỤNG RotateElement với AllowJoinedElementRotation
                 Debug.WriteLine($"[ROTATE] Thực hiện xoay Pap {angle * 180 / Math.PI:F2}°...");
-                ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
-                Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
+                
+                try
+                {
+                    // Sử dụng RotateElement thay vì RotateElements để giữ kết nối
+                    if (pap is FamilyInstance fi)
+                    {
+                        fi.Location.Rotate(rotationAxis, angle);
+                    }
+                    else
+                    {
+                        ElementTransformUtils.RotateElement(doc, pap.Id, rotationAxis, angle);
+                    }
+                    Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[ROTATE] Lỗi khi xoay: {ex.Message}");
+                    // Fallback: dùng RotateElements
+                    ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
+                    Debug.WriteLine("[ROTATE] Xoay bằng phương pháp dự phòng");
+                }
 
                 return true;
             }
