@@ -834,30 +834,6 @@ namespace Quoc_MEP
 
                 Debug.WriteLine($"[ROTATE] Hướng Pap: ({papDirection.X:F3}, {papDirection.Y:F3}, {papDirection.Z:F3})");
 
-                // Lấy vector mục tiêu: từ center line ống xuống Pap connector
-                XYZ papConnectorOrigin = GetPapConnectorOrigin(pap, mainPipe);
-                if (papConnectorOrigin == null)
-                {
-                    Debug.WriteLine("[ROTATE] Không lấy được vị trí connector Pap");
-                    return false;
-                }
-                
-                XYZ targetVector = (papConnectorOrigin - rotationCenter).Normalize();
-                Debug.WriteLine($"[ROTATE] Vector mục tiêu (từ ống xuống Pap): ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
-                
-                // Kiểm tra xem Pap đã song song với target vector chưa
-                double dotProduct = Math.Abs(papDirection.DotProduct(targetVector));
-                double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
-                
-                Debug.WriteLine($"[ROTATE] Góc lệch với vector mục tiêu: {angleDegrees:F2}°");
-
-                // Nếu đã song song (góc < 0.1 độ), không cần quay
-                if (angleDegrees < 0.1)
-                {
-                    Debug.WriteLine("[ROTATE] Pap đã song song với vector mục tiêu, không cần quay");
-                    return true;
-                }
-
                 // Xác định trục quay = trục của ống 65 (ống chính)
                 XYZ rotationAxisDirection;
                 if (mainPipe != null)
@@ -866,7 +842,7 @@ namespace Quoc_MEP
                     if (pipeCenterLine != null)
                     {
                         rotationAxisDirection = (pipeCenterLine.GetEndPoint(1) - pipeCenterLine.GetEndPoint(0)).Normalize();
-                        Debug.WriteLine($"[ROTATE] Trục quay từ ống 65: ({rotationAxisDirection.X:F3}, {rotationAxisDirection.Y:F3}, {rotationAxisDirection.Z:F3})");
+                        Debug.WriteLine($"[ROTATE] Hướng center line ống 65: ({rotationAxisDirection.X:F3}, {rotationAxisDirection.Y:F3}, {rotationAxisDirection.Z:F3})");
                     }
                     else
                     {
@@ -878,6 +854,23 @@ namespace Quoc_MEP
                 {
                     Debug.WriteLine("[ROTATE] Không có ống chính, dùng trục Z");
                     rotationAxisDirection = XYZ.BasisZ;
+                }
+                
+                // Vector mục tiêu = hướng của center line ống (đường màu xanh lá)
+                XYZ targetVector = rotationAxisDirection;
+                Debug.WriteLine($"[ROTATE] Vector mục tiêu (center line ống): ({targetVector.X:F3}, {targetVector.Y:F3}, {targetVector.Z:F3})");
+                
+                // Kiểm tra xem Pap đã song song với target vector chưa
+                double dotProduct = Math.Abs(papDirection.DotProduct(targetVector));
+                double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
+                
+                Debug.WriteLine($"[ROTATE] Góc lệch với center line ống: {angleDegrees:F2}°");
+
+                // Nếu đã song song (góc < 0.1 độ), không cần quay
+                if (angleDegrees < 0.1)
+                {
+                    Debug.WriteLine("[ROTATE] Pap đã song song với center line ống, không cần quay");
+                    return true;
                 }
 
                 // Project hướng Pap lên mặt phẳng vuông góc với trục quay
