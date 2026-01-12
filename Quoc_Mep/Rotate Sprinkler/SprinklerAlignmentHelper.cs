@@ -942,54 +942,6 @@ namespace Quoc_MEP
         }
 
         /// <summary>
-        /// Lấy hướng của Pap từ connector
-        /// </summary>
-        private static XYZ GetPapDirection(Element pap)
-        {
-            try
-            {
-                // Lấy connector của Pap
-                ConnectorSet connectors = null;
-                if (pap is FamilyInstance fi)
-                {
-                    connectors = fi.MEPModel?.ConnectorManager?.Connectors;
-                }
-                
-                if (connectors != null)
-                {
-                    foreach (Connector conn in connectors)
-                    {
-                        // Lấy hướng từ connector
-                        if (conn.CoordinateSystem != null)
-                        {
-                            return conn.CoordinateSystem.BasisZ; // Hướng chính của connector
-                        }
-                    }
-                }
-                
-                // Fallback: Lấy từ geometry
-                Options geoOptions = new Options { DetailLevel = ViewDetailLevel.Fine };
-                GeometryElement geoElement = pap.get_Geometry(geoOptions);
-                if (geoElement != null)
-                {
-                    foreach (GeometryObject geoObj in geoElement)
-                    {
-                        if (geoObj is Line line)
-                        {
-                            return (line.GetEndPoint(1) - line.GetEndPoint(0)).Normalize();
-                        }
-                    }
-                }
-                
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Lấy vị trí của element (LocationPoint hoặc trung điểm LocationCurve)
         /// </summary>
         public static XYZ GetElementLocation(Element element)
