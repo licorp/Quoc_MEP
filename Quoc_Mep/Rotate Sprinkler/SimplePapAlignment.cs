@@ -62,11 +62,12 @@ namespace Quoc_MEP
                 
                 Debug.WriteLine($"[SIMPLE] Góc lệch với trục Z: {angleDegrees:F2}°");
                 
-                // Nếu đã thẳng đứng (góc < 0.1 độ), không cần quay
-                if (angleDegrees < 0.1)
+                // Nếu đã thẳng đứng (góc < 1 độ), không cần quay
+                if (angleDegrees < 1.0)
                 {
                     result.Success = true;
                     result.AlreadyAligned = true;
+                    result.ErrorMessage = $"Pap đã gần thẳng đứng (lệch {angleDegrees:F2}°)";
                     Debug.WriteLine("[SIMPLE] Pap đã thẳng đứng");
                     return result;
                 }
@@ -82,6 +83,7 @@ namespace Quoc_MEP
                     result.RotationAngle = angleDegrees;
                     result.DimensionsDeleted = dimsDeleted;
                     result.ElementsAligned.Add(pap);
+                    result.ErrorMessage = $"Đã xoay {angleDegrees:F2}°, xóa {dimsDeleted} dimensions";
                     Debug.WriteLine($"[SIMPLE] Đã quay Pap thành công, xóa {dimsDeleted} dimensions");
                 }
                 else

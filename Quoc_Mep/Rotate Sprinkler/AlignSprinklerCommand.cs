@@ -60,6 +60,7 @@ namespace Quoc_MEP
                         int totalRotated = 0;
                         int totalDimensionsDeleted = 0;
                         List<string> errors = new List<string>();
+                        List<string> rotationDetails = new List<string>();
 
                         foreach (Element pap in paps)
                         {
@@ -77,6 +78,13 @@ namespace Quoc_MEP
                                 if (result.RotationApplied)
                                 {
                                     totalRotated++;
+                                    rotationDetails.Add($"Pap {pap.Id}: {result.RotationAngle:F2}°");
+                                }
+                                
+                                // Log chi tiết từ result.ErrorMessage (có thông tin debug)
+                                if (!string.IsNullOrEmpty(result.ErrorMessage))
+                                {
+                                    rotationDetails.Add($"Pap {pap.Id}: {result.ErrorMessage}");
                                 }
                             }
                             else
@@ -102,6 +110,10 @@ namespace Quoc_MEP
                             if (totalRotated > 0)
                             {
                                 msg += $"  - Đã quay để căn chỉnh: {totalRotated}\n";
+                            }
+                            if (rotationDetails.Count > 0 && rotationDetails.Count <= 5)
+                            {
+                                msg += "\nChi tiết:\n" + string.Join("\n", rotationDetails);
                             }
                             if (totalDimensionsDeleted > 0)
                             {
