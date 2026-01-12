@@ -909,11 +909,11 @@ namespace Quoc_MEP
                     return true;
                 }
 
-                // Tạo trục quay qua tâm quay
+                // Tạo trục quay qua tâm quay (trục của ống 65)
                 Line rotationAxis = Line.CreateBound(rotationCenter, rotationCenter + rotationAxisDirection);
                 Debug.WriteLine($"[ROTATE] Tâm quay: ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
 
-                // CHỈ QUAY PAP
+                // CHỈ QUAY PAP - không disconnect vì Pap là TAP connection
                 var elementsToRotate = new List<ElementId> { pap.Id };
                 
                 // Unpin pap
@@ -928,29 +928,10 @@ namespace Quoc_MEP
                     Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions");
                 }
 
-                // Quay Pap - SỬ DỤNG RotateElement với AllowJoinedElementRotation
-                Debug.WriteLine($"[ROTATE] Thực hiện xoay Pap {angle * 180 / Math.PI:F2}°...");
-                
-                try
-                {
-                    // Sử dụng RotateElement thay vì RotateElements để giữ kết nối
-                    if (pap is FamilyInstance fi)
-                    {
-                        fi.Location.Rotate(rotationAxis, angle);
-                    }
-                    else
-                    {
-                        ElementTransformUtils.RotateElement(doc, pap.Id, rotationAxis, angle);
-                    }
-                    Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[ROTATE] Lỗi khi xoay: {ex.Message}");
-                    // Fallback: dùng RotateElements
-                    ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
-                    Debug.WriteLine("[ROTATE] Xoay bằng phương pháp dự phòng");
-                }
+                // Quay Pap quanh center line của ống 65 (dùng RotateElements giống folder Rotate)
+                Debug.WriteLine($"[ROTATE] Thực hiện xoay Pap {angle * 180 / Math.PI:F2}° quanh center line ống 65...");
+                ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
+                Debug.WriteLine("[ROTATE] Xoay hoàn thành!");
 
                 return true;
             }

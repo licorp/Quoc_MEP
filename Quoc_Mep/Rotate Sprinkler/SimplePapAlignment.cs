@@ -182,36 +182,75 @@ namespace Quoc_MEP
         }
         
         /// <summary>
-        /// Lấy giao điểm giữa Pap và ống 65 (dùng làm tâm quay)
+        /// Lấy điểm trên center line của ống 65 gần connector Pap nhất (dùng làm tâm quay)
+        /// Đây là điểm chiếu vuông góc của connector Pap lên center line ống 65
         /// </summary>
         private static XYZ GetPapPipeIntersection(Element pap, Pipe pipe)
         {
             try
             {
-                // Lấy connector của Pap kết nối với ống
-                ConnectorManager papCM = GetConnectorManager(pap);
-                if (papCM == null) return null;
-                
-                foreach (Connector papConn in papCM.Connectors)
+                // Lấy center line của ống 65
+                LocationCurve locCurve = pipe.Location as LocationCurve;
+                if (locCurve == null)
                 {
-                    if (papConn.IsConnected)
+                    Debug.WriteLine("[SIMPLE] Pipe không có LocationCurve");
+                    return null;
+                }
+                
+                Line pipeCenterLine = locCurve.Curve as Line;
+                if (pipeCenterLine == null)
+                {
+                    // Nếu không phải Line, lấy 2 điểm đầu cuối
+                    XYZ p1 = locCurve.Curve.GetEndPoint(0);
+                    XYZ p2 = locCurve.Curve.GetEndPoint(1);
+                    pipeCenterLine = Line.CreateBound(p1, p2);
+                }
+                
+                // Lấy vị trí connector của Pap
+                XYZ papConnectorOrigin = null;
+                ConnectorManager papCM = GetConnectorManager(pap);
+                if (papCM != null)
+                {
+                    foreach (Connector papConn in papCM.Connectors)
                     {
-                        foreach (Connector connectedConn in papConn.AllRefs)
+                        if (papConn.IsConnected)
                         {
-                            if (connectedConn.Owner.Id == pipe.Id)
+                            foreach (Connector connectedConn in papConn.AllRefs)
                             {
-                                // Trả về vị trí connector của Pap (giao điểm với ống)
-                                return papConn.Origin;
+                                if (connectedConn.Owner.Id == pipe.Id)
+                                {
+                                    papConnectorOrigin = papConn.Origin;
+                                    break;
+                                }
                             }
                         }
+                        if (papConnectorOrigin != null) break;
                     }
                 }
                 
-                // Fallback: dùng vị trí của Pap
-                return GetElementLocation(pap);
+                if (papConnectorOrigin == null)
+                {
+                    Debug.WriteLine("[SIMPLE] Không tìm thấy connector của Pap kết nối với ống");
+                    return GetElementLocation(pap);
+                }
+                
+                // Chiếu điểm connector Pap lên center line của ống 65
+                IntersectionResult result = pipeCenterLine.Project(papConnectorOrigin);
+                if (result != null)
+                {
+                    XYZ projectedPoint = result.XYZPoint;
+                    Debug.WriteLine($"[SIMPLE] Tâm quay trên center line: ({projectedPoint.X:F3}, {projectedPoint.Y:F3}, {projectedPoint.Z:F3})");
+                    Debug.WriteLine($"[SIMPLE] Khoảng cách từ connector đến center line: {result.Distance * 304.8:F1}mm");
+                    return projectedPoint;
+                }
+                
+                // Fallback: dùng vị trí connector của Pap
+                Debug.WriteLine("[SIMPLE] Không chiếu được lên center line, dùng vị trí connector");
+                return papConnectorOrigin;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[SIMPLE] GetPapPipeIntersection Exception: {ex.Message}");
                 return null;
             }
         }
