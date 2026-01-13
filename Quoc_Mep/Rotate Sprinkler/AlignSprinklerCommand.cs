@@ -62,9 +62,14 @@ namespace Quoc_MEP
                         List<string> errors = new List<string>();
                         List<string> rotationDetails = new List<string>();
 
+                        // XỬ LÝ TUẦN TỰ TỪNG PAP MỘT (không xử lý hàng loạt)
+                        // Flow cho MỖI Pap: Xoay Pap → Tìm chain → Align chain → Xong Pap này → Sang Pap khác
                         foreach (Element pap in paps)
                         {
-                            // Chỉ kiểm tra Pap với ống 65mm
+                            Debug.WriteLine($"\n========== BẮT ĐẦU XỬ LÝ PAP {pap.Id} ==========");
+                            
+                            // Xử lý RIÊNG LẺ Pap này: Xoay + Tìm + Align trong 1 lần gọi
+                            // Không tách rời: tìm tất cả trước rồi mới align sau
                             AlignmentResult result = SprinklerAlignmentHelper.AlignPapSimple(doc, pap);
 
                             if (result.Success)
@@ -86,6 +91,8 @@ namespace Quoc_MEP
                                 {
                                     rotationDetails.Add($"Pap {pap.Id}: {result.ErrorMessage}");
                                 }
+                                
+                                Debug.WriteLine($"========== HOÀN THÀNH PAP {pap.Id} ==========\n");
                             }
                             else
                             {
@@ -94,6 +101,7 @@ namespace Quoc_MEP
                                 {
                                     errors.Add($"Pap {pap.Id}: {result.ErrorMessage}");
                                 }
+                                Debug.WriteLine($"========== THẤT BẠI PAP {pap.Id} ==========\n");
                             }
                         }
 

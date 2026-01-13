@@ -13,6 +13,12 @@ namespace Quoc_MEP
     {
         /// <summary>
         /// Căn chỉnh Pap đơn giản - chỉ cần Pap và ống 65mm
+        /// QUAN TRỌNG: Xử lý TUẦN TỰ từng Pap:
+        /// 1. Xoay Pap này
+        /// 2. Tìm chain của Pap này
+        /// 3. Align chain của Pap này
+        /// 4. Xong → Trả về kết quả
+        /// KHÔNG tách rời: tìm hết trước → xoay sau
         /// </summary>
         public static AlignmentResult AlignPapSimple(Document doc, Element pap)
         {
@@ -20,7 +26,10 @@ namespace Quoc_MEP
             
             try
             {
-                Debug.WriteLine($"[SIMPLE] Bắt đầu xử lý Pap {pap.Id}");
+                Debug.WriteLine($"[SIMPLE] ╔═══════════════════════════════════════════╗");
+                Debug.WriteLine($"[SIMPLE] ║  XỬ LÝ RIÊNG LẺ PAP {pap.Id}");
+                Debug.WriteLine($"[SIMPLE] ╚═══════════════════════════════════════════╝");
+                Debug.WriteLine($"[SIMPLE] Bước 1/4: Tìm ống 65mm kết nối với Pap");
                 
                 // Bước 1: Tìm ống 65mm kết nối với Pap
                 Pipe pipe65 = FindPipe65Connected(pap);
@@ -31,7 +40,8 @@ namespace Quoc_MEP
                     return result;
                 }
                 
-                Debug.WriteLine($"[SIMPLE] Tìm thấy ống 65: {pipe65.Id}");
+                Debug.WriteLine($"[SIMPLE] ✓ Tìm thấy ống 65: {pipe65.Id}");
+                Debug.WriteLine($"[SIMPLE] Bước 2/4: Xác định điểm giao (tâm quay)");
                 
                 // Bước 2: Lấy vị trí giao điểm giữa Pap và ống 65 (dùng làm tâm quay)
                 XYZ rotationCenter = GetPapPipeIntersection(pap, pipe65);
@@ -42,7 +52,8 @@ namespace Quoc_MEP
                     return result;
                 }
                 
-                Debug.WriteLine($"[SIMPLE] Tâm quay: ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
+                Debug.WriteLine($"[SIMPLE] ✓ Tâm quay: ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
+                Debug.WriteLine($"[SIMPLE] Bước 3/4: Kiểm tra và xoay Pap (nếu cần)");
                 
                 // Bước 3: Lấy hướng của Pap
                 XYZ papDirection = GetPapDirection(pap);
@@ -55,26 +66,31 @@ namespace Quoc_MEP
                 
                 Debug.WriteLine($"[SIMPLE] Hướng Pap: ({papDirection.X:F3}, {papDirection.Y:F3}, {papDirection.Z:F3})");
                 
-                // Bước 4: Kiểm tra góc với trục Z (thẳng đứng hướng XUỐNG)
+                // Bước 4: Tính góc lệch CHÍNH XÁC của Pap này
+                // Sử dụng điểm giao (rotationCenter) để tính góc chính xác từ tâm quay
                 XYZ verticalDirection = -XYZ.BasisZ; // Hướng xuống
                 
                 // Kiểm tra góc giữa Pap direction và trục thẳng đứng hướng xuống
-                double dotProduct = Math.Abs(papDirection.DotProduct(verticalDirection));
-                double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, dotProduct))) * 180.0 / Math.PI;
+                // Không dùng Math.Abs để giữ thông tin hướng
+                double dotProduct = papDirection.DotProduct(verticalDirection);
+                double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, Math.Abs(dotProduct)))) * 180.0 / Math.PI;
                 
-                Debug.WriteLine($"[SIMPLE] Góc lệch với trục thẳng đứng: {angleDegrees:F2}°");
+                Debug.WriteLine($"[SIMPLE] *** Pap {pap.Id} - Góc lệch CHÍNH XÁC: {angleDegrees:F4}° (dotProduct: {dotProduct:F4}) ***");
+                Debug.WriteLine($"[SIMPLE] Điểm giao (tâm quay): ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
                 
-                // Nếu đã thẳng đứng (góc < 1 độ), không cần quay
-                if (angleDegrees < 1.0)
+                // Nếu đã thẳng đứng và hướng xuống (góc < 0.5 độ và dotProduct > 0.99), không cần quay
+                if (angleDegrees < 0.5 && dotProduct > 0.99)
                 {
                     result.Success = true;
                     result.AlreadyAligned = true;
                     result.ErrorMessage = $"Pap đã gần thẳng đứng (lệch {angleDegrees:F2}°)";
-                    Debug.WriteLine("[SIMPLE] Pap đã thẳng đứng");
+                    Debug.WriteLine($"[SIMPLE] Pap {pap.Id} đã thẳng đứng");
                     return result;
                 }
                 
-                // Bước 5: Quay Pap để thẳng đứng
+                Debug.WriteLine($"[SIMPLE] Pap {pap.Id} CẦN XOAY {angleDegrees:F2}° để thẳng đứng");
+                
+                Debug.WriteLine($"[SIMPLE] >>> Đang xoay Pap {pap.Id}...");
                 int dimsDeleted;
                 bool rotated = RotatePapToVertical(doc, pap, rotationCenter, pipe65, out dimsDeleted);
                 
@@ -85,8 +101,26 @@ namespace Quoc_MEP
                     result.RotationAngle = angleDegrees;
                     result.DimensionsDeleted = dimsDeleted;
                     result.ElementsAligned.Add(pap);
-                    result.ErrorMessage = $"Đã xoay {angleDegrees:F2}°, xóa {dimsDeleted} dimensions";
-                    Debug.WriteLine($"[SIMPLE] Đã quay Pap thành công, xóa {dimsDeleted} dimensions");
+                    Debug.WriteLine($"[SIMPLE] ✓ Đã quay Pap {pap.Id} thành công, xóa {dimsDeleted} dimensions");
+                    
+                    // Bước 6: SAU KHI XOAY XONG → Tìm và align chain NGAY CHO PAP NÀY
+                    Debug.WriteLine($"[SIMPLE] Bước 4/4: Tìm và align chain sau khi xoay xong Pap {pap.Id}");
+                    // Bước 6: Align toàn bộ chuỗi (Pipe 40mm + Fitting) với Pap
+                    Debug.WriteLine($"[SIMPLE] === Align chuỗi kết nối với Pap {pap.Id} ===");
+                    var (alignedCount, chainDetails) = SprinklerAlignmentHelper.AlignChainWithPap(doc, pap);
+                    
+                    string alignMsg = "";
+                    if (alignedCount > 0)
+                    {
+                        alignMsg = $", đã align {alignedCount} element ({chainDetails})";
+                        Debug.WriteLine($"[SIMPLE] ✓ Đã align {alignedCount} element trong chuỗi");
+                    }
+                    else if (!string.IsNullOrEmpty(chainDetails))
+                    {
+                        alignMsg = $", {chainDetails}";
+                    }
+                    
+                    result.ErrorMessage = $"Đã xoay {angleDegrees:F2}°, xóa {dimsDeleted} dimensions{alignMsg}";
                 }
                 else
                 {
@@ -238,18 +272,25 @@ namespace Quoc_MEP
                     return GetElementLocation(pap);
                 }
                 
-                // Chiếu điểm connector Pap lên center line của ống 65
-                IntersectionResult result = pipeCenterLine.Project(papConnectorOrigin);
-                if (result != null)
+                // Tính CHÍNH XÁC điểm giao giữa trục Pap và center line ống 65
+                // Phương pháp: chiếu connector Pap lên center line
+                IntersectionResult projResult = pipeCenterLine.Project(papConnectorOrigin);
+                if (projResult != null)
                 {
-                    XYZ projectedPoint = result.XYZPoint;
-                    Debug.WriteLine($"[SIMPLE] Tâm quay trên center line: ({projectedPoint.X:F3}, {projectedPoint.Y:F3}, {projectedPoint.Z:F3})");
-                    Debug.WriteLine($"[SIMPLE] Khoảng cách từ connector đến center line: {result.Distance * 304.8:F1}mm");
+                    XYZ projectedPoint = projResult.XYZPoint;
+                    double distanceMM = projResult.Distance * 304.8;
+                    
+                    Debug.WriteLine($"[SIMPLE] === ĐIỂM GIAO CHÍNH XÁC ===");
+                    Debug.WriteLine($"[SIMPLE] Vị trí connector Pap: ({papConnectorOrigin.X:F4}, {papConnectorOrigin.Y:F4}, {papConnectorOrigin.Z:F4})");
+                    Debug.WriteLine($"[SIMPLE] Điểm chiếu lên center line: ({projectedPoint.X:F4}, {projectedPoint.Y:F4}, {projectedPoint.Z:F4})");
+                    Debug.WriteLine($"[SIMPLE] Khoảng cách vuông góc: {distanceMM:F2}mm");
+                    Debug.WriteLine($"[SIMPLE] ==============================");
+                    
                     return projectedPoint;
                 }
                 
                 // Fallback: dùng vị trí connector của Pap
-                Debug.WriteLine("[SIMPLE] Không chiếu được lên center line, dùng vị trí connector");
+                Debug.WriteLine("[SIMPLE] CẢNH BÁO: Không chiếu được lên center line, dùng vị trí connector");
                 return papConnectorOrigin;
             }
             catch (Exception ex)
