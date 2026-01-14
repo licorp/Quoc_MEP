@@ -49,18 +49,18 @@ namespace Quoc_MEP
                         {
                             doc.Delete(dim.Id);
                             deletedDimensions.Add(dim.Id);
-                            Debug.WriteLine($"[DIMENSION] Đã xóa dimension {dim.Id} để tránh lỗi parallel");
+                            LogHelper.Log($"[DIMENSION] Đã xóa dimension {dim.Id} để tránh lỗi parallel");
                         }
                         catch (Exception ex)
                         {
-                            Debug.WriteLine($"[DIMENSION] Không thể xóa dimension {dim.Id}: {ex.Message}");
+                            LogHelper.Log($"[DIMENSION] Không thể xóa dimension {dim.Id}: {ex.Message}");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[DIMENSION] Lỗi khi xóa dimensions: {ex.Message}");
+                LogHelper.Log($"[DIMENSION] Lỗi khi xóa dimensions: {ex.Message}");
             }
             
             return deletedDimensions;
@@ -827,17 +827,17 @@ namespace Quoc_MEP
             dimensionsDeleted = 0;
             try
             {
-                Debug.WriteLine($"[ROTATE] Bắt đầu quay Pap {pap.Id}");
+                LogHelper.Log($"[ROTATE] Bắt đầu quay Pap {pap.Id}");
                 
                 // Lấy hướng của Pap
                 XYZ papDirection = GetPapDirection(pap);
                 if (papDirection == null || papDirection.IsZeroLength())
                 {
-                    Debug.WriteLine("[ROTATE] Không xác định được hướng Pap");
+                    LogHelper.Log("[ROTATE] Không xác định được hướng Pap");
                     return false;
                 }
 
-                Debug.WriteLine($"[ROTATE] Hướng Pap ban đầu: ({papDirection.X:F4}, {papDirection.Y:F4}, {papDirection.Z:F4})");
+                LogHelper.Log($"[ROTATE] Hướng Pap ban đầu: ({papDirection.X:F4}, {papDirection.Y:F4}, {papDirection.Z:F4})");
 
                 // Xác định trục quay = trục của ống 65 (ống chính)
                 XYZ rotationAxisDirection;
@@ -848,18 +848,18 @@ namespace Quoc_MEP
                     if (pipeCenterLine != null)
                     {
                         rotationAxisDirection = (pipeCenterLine.GetEndPoint(1) - pipeCenterLine.GetEndPoint(0)).Normalize();
-                        Debug.WriteLine($"[ROTATE] Trục xoay (center line ống 65): ({rotationAxisDirection.X:F4}, {rotationAxisDirection.Y:F4}, {rotationAxisDirection.Z:F4})");
-                        Debug.WriteLine($"[ROTATE] Điểm giao (tâm xoay): ({rotationCenter.X:F4}, {rotationCenter.Y:F4}, {rotationCenter.Z:F4})");
+                        LogHelper.Log($"[ROTATE] Trục xoay (center line ống 65): ({rotationAxisDirection.X:F4}, {rotationAxisDirection.Y:F4}, {rotationAxisDirection.Z:F4})");
+                        LogHelper.Log($"[ROTATE] Điểm giao (tâm xoay): ({rotationCenter.X:F4}, {rotationCenter.Y:F4}, {rotationCenter.Z:F4})");
                     }
                     else
                     {
-                        Debug.WriteLine("[ROTATE] CẢNH BÁO: Không lấy được center line ống, dùng trục Z");
+                        LogHelper.Log("[ROTATE] CẢNH BÁO: Không lấy được center line ống, dùng trục Z");
                         rotationAxisDirection = XYZ.BasisZ;
                     }
                 }
                 else
                 {
-                    Debug.WriteLine("[ROTATE] CẢNH BÁO: Không có ống chính, dùng trục Z");
+                    LogHelper.Log("[ROTATE] CẢNH BÁO: Không có ống chính, dùng trục Z");
                     rotationAxisDirection = XYZ.BasisZ;
                 }
                 
@@ -870,19 +870,19 @@ namespace Quoc_MEP
                 double dotProduct = papDirection.DotProduct(targetVector);
                 double angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, Math.Abs(dotProduct)))) * 180.0 / Math.PI;
                 
-                Debug.WriteLine($"[ROTATE] ========================================");
-                Debug.WriteLine($"[ROTATE] Pap {pap.Id} - GÓC LỆCH BAN ĐẦU: {angleDegrees:F4}°");
-                Debug.WriteLine($"[ROTATE] dotProduct với trục xuống: {dotProduct:F4}");
-                Debug.WriteLine($"[ROTATE] ========================================");
+                LogHelper.Log($"[ROTATE] ========================================");
+                LogHelper.Log($"[ROTATE] Pap {pap.Id} - GÓC LỆCH BAN ĐẦU: {angleDegrees:F4}°");
+                LogHelper.Log($"[ROTATE] dotProduct với trục xuống: {dotProduct:F4}");
+                LogHelper.Log($"[ROTATE] ========================================");
 
                 // Nếu đã thẳng đứng VÀ hướng xuống (góc < 0.1 độ và dotProduct > 0.999), không cần quay
                 if (angleDegrees < 0.1 && dotProduct > 0.999)
                 {
-                    Debug.WriteLine($"[ROTATE] Pap {pap.Id} đã thẳng đứng và hướng xuống, không cần quay");
+                    LogHelper.Log($"[ROTATE] Pap {pap.Id} đã thẳng đứng và hướng xuống, không cần quay");
                     return true;
                 }
                 
-                Debug.WriteLine($"[ROTATE] Pap {pap.Id} CẦN XOAY để căn chỉnh");
+                LogHelper.Log($"[ROTATE] Pap {pap.Id} CẦN XOAY để căn chỉnh");
 
                 // Lặp tối đa 3 lần để đạt độ chính xác cao
                 int maxIterations = 3;
@@ -894,17 +894,17 @@ namespace Quoc_MEP
                 ConnectionHelper.UnpinElementIfPinned(doc, pap);
 
                 // Xóa dimensions trước khi quay (chỉ làm 1 lần)
-                Debug.WriteLine("[ROTATE] Đang xóa dimensions liên quan...");
+                LogHelper.Log("[ROTATE] Đang xóa dimensions liên quan...");
                 var deletedDimensions = DeleteDimensionsForElements(doc, elementsToRotate);
                 dimensionsDeleted = deletedDimensions.Count;
                 if (dimensionsDeleted > 0)
                 {
-                    Debug.WriteLine($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions");
+                    LogHelper.Log($"[ROTATE] Đã xóa {dimensionsDeleted} dimensions");
                 }
                 
                 for (int iteration = 0; iteration < maxIterations; iteration++)
                 {
-                    Debug.WriteLine($"[ROTATE] === Pap {pap.Id} - Vòng lặp {iteration + 1}/{maxIterations} ===");
+                    LogHelper.Log($"[ROTATE] === Pap {pap.Id} - Vòng lặp {iteration + 1}/{maxIterations} ===");
                     
                     // Cập nhật lại hướng Pap sau mỗi lần xoay
                     if (iteration > 0)
@@ -912,7 +912,7 @@ namespace Quoc_MEP
                         papDirection = GetPapDirection(pap);
                         if (papDirection == null || papDirection.IsZeroLength())
                         {
-                            Debug.WriteLine("[ROTATE] CẢNH BÁO: Không xác định được hướng Pap sau xoay");
+                            LogHelper.Log("[ROTATE] CẢNH BÁO: Không xác định được hướng Pap sau xoay");
                             break;
                         }
                         
@@ -920,14 +920,14 @@ namespace Quoc_MEP
                         dotProduct = papDirection.DotProduct(targetVector);
                         angleDegrees = Math.Acos(Math.Max(-1.0, Math.Min(1.0, Math.Abs(dotProduct)))) * 180.0 / Math.PI;
                         
-                        Debug.WriteLine($"[ROTATE] Pap {pap.Id} sau iteration {iteration}:");
-                        Debug.WriteLine($"[ROTATE]   - Hướng mới: ({papDirection.X:F4}, {papDirection.Y:F4}, {papDirection.Z:F4})");
-                        Debug.WriteLine($"[ROTATE]   - Góc lệch còn lại: {angleDegrees:F4}°");
-                        Debug.WriteLine($"[ROTATE]   - dotProduct: {dotProduct:F4}");
+                        LogHelper.Log($"[ROTATE] Pap {pap.Id} sau iteration {iteration}:");
+                        LogHelper.Log($"[ROTATE]   - Hướng mới: ({papDirection.X:F4}, {papDirection.Y:F4}, {papDirection.Z:F4})");
+                        LogHelper.Log($"[ROTATE]   - Góc lệch còn lại: {angleDegrees:F4}°");
+                        LogHelper.Log($"[ROTATE]   - dotProduct: {dotProduct:F4}");
                         
                         if (angleDegrees < 0.1 && dotProduct > 0.999)
                         {
-                            Debug.WriteLine($"[ROTATE] Pap {pap.Id} đã đạt độ chính xác mong muốn!");
+                            LogHelper.Log($"[ROTATE] Pap {pap.Id} đã đạt độ chính xác mong muốn!");
                             break;
                         }
                     }
@@ -936,7 +936,7 @@ namespace Quoc_MEP
                 XYZ projectedPapDir = papDirection - rotationAxisDirection * papDirection.DotProduct(rotationAxisDirection);
                 if (projectedPapDir.IsZeroLength())
                 {
-                    Debug.WriteLine("[ROTATE] Hướng Pap đã song song với trục quay");
+                    LogHelper.Log("[ROTATE] Hướng Pap đã song song với trục quay");
                     return true;
                 }
                 projectedPapDir = projectedPapDir.Normalize();
@@ -945,7 +945,7 @@ namespace Quoc_MEP
                 XYZ projectedTargetDir = targetVector - rotationAxisDirection * targetVector.DotProduct(rotationAxisDirection);
                 if (projectedTargetDir.IsZeroLength())
                 {
-                    Debug.WriteLine("[ROTATE] Target vector song song với trục quay");
+                    LogHelper.Log("[ROTATE] Target vector song song với trục quay");
                     return true;
                 }
                 projectedTargetDir = projectedTargetDir.Normalize();
@@ -955,16 +955,16 @@ namespace Quoc_MEP
                 dot = Math.Max(-1.0, Math.Min(1.0, dot));
                 double angle = Math.Acos(dot);
                 
-                Debug.WriteLine($"[ROTATE] === TÍNH GÓC XOAY CHO PAP {pap.Id} ===");
-                Debug.WriteLine($"[ROTATE] Góc tính được (radians): {angle:F6}");
-                Debug.WriteLine($"[ROTATE] Góc tính được (degrees): {angle * 180 / Math.PI:F4}°");
+                LogHelper.Log($"[ROTATE] === TÍNH GÓC XOAY CHO PAP {pap.Id} ===");
+                LogHelper.Log($"[ROTATE] Góc tính được (radians): {angle:F6}");
+                LogHelper.Log($"[ROTATE] Góc tính được (degrees): {angle * 180 / Math.PI:F4}°");
 
                 // QUAN TRỌNG: Không được xoay quá 90 độ
                 // Nếu góc > 90°, xoay ngược chiều (180° - angle)
                 if (Math.Abs(angle) > Math.PI / 2)
                 {
                     angle = Math.PI - angle;
-                    Debug.WriteLine($"[ROTATE] Góc > 90°, điều chỉnh thành: {angle * 180 / Math.PI:F4}°");
+                    LogHelper.Log($"[ROTATE] Góc > 90°, điều chỉnh thành: {angle * 180 / Math.PI:F4}°");
                 }
 
                 // Xác định chiều quay (từ Pap về Target)
@@ -973,16 +973,16 @@ namespace Quoc_MEP
                 if (crossDotAxis < 0)
                 {
                     angle = -angle;
-                    Debug.WriteLine($"[ROTATE] Đảo chiều quay (cross product: {crossDotAxis:F4})");
+                    LogHelper.Log($"[ROTATE] Đảo chiều quay (cross product: {crossDotAxis:F4})");
                 }
                 
-                Debug.WriteLine($"[ROTATE] GÓC XOAY CUỐI CÙNG cho Pap {pap.Id}: {angle * 180 / Math.PI:F4}°");
-                Debug.WriteLine($"[ROTATE] ====================================");
+                LogHelper.Log($"[ROTATE] GÓC XOAY CUỐI CÙNG cho Pap {pap.Id}: {angle * 180 / Math.PI:F4}°");
+                LogHelper.Log($"[ROTATE] ====================================");
 
                 // Nếu góc quá nhỏ, không cần quay nữa
                 if (Math.Abs(angle) < 0.0001) // ~0.0057 độ
                 {
-                    Debug.WriteLine($"[ROTATE] Pap {pap.Id}: Góc quá nhỏ ({Math.Abs(angle) * 180 / Math.PI:F4}°), kết thúc iteration");
+                    LogHelper.Log($"[ROTATE] Pap {pap.Id}: Góc quá nhỏ ({Math.Abs(angle) * 180 / Math.PI:F4}°), kết thúc iteration");
                     break;
                 }
 
@@ -990,9 +990,9 @@ namespace Quoc_MEP
                 Line rotationAxis = Line.CreateBound(rotationCenter, rotationCenter + rotationAxisDirection);
 
                     // Thực hiện xoay Pap quanh center line của ống 65
-                    Debug.WriteLine($"[ROTATE] >>> Thực hiện xoay Pap {pap.Id}: {angle * 180 / Math.PI:F4}° quanh tâm ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
+                    LogHelper.Log($"[ROTATE] >>> Thực hiện xoay Pap {pap.Id}: {angle * 180 / Math.PI:F4}° quanh tâm ({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})");
                     ElementTransformUtils.RotateElements(doc, elementsToRotate, rotationAxis, angle);
-                    Debug.WriteLine($"[ROTATE] >>> Xoay Pap {pap.Id} hoàn thành!");
+                    LogHelper.Log($"[ROTATE] >>> Xoay Pap {pap.Id} hoàn thành!");
                 } // end iteration loop
 
                 return true;
@@ -1047,11 +1047,11 @@ namespace Quoc_MEP
                 XYZ papLocation = GetElementLocation(pap);
                 if (papLocation == null)
                 {
-                    Debug.WriteLine("[FIND_40MM] Không xác định được vị trí Pap");
+                    LogHelper.Log("[FIND_40MM] Không xác định được vị trí Pap");
                     return result;
                 }
 
-                Debug.WriteLine($"[FIND_40MM] Tìm kiếm pipe/fitting 40mm quanh Pap {pap.Id} (bán kính: {searchRadius * 304.8:F0}mm)");
+                LogHelper.Log($"[FIND_40MM] Tìm kiếm pipe/fitting 40mm quanh Pap {pap.Id} (bán kính: {searchRadius * 304.8:F0}mm)");
 
                 // Tạo bounding box quanh Pap
                 XYZ minPoint = papLocation - new XYZ(searchRadius, searchRadius, searchRadius);
@@ -1086,7 +1086,7 @@ namespace Quoc_MEP
                             if (Math.Abs(diameterMM - 40) < 3)
                             {
                                 result.Add(pipe);
-                                Debug.WriteLine($"[FIND_40MM] Tìm thấy Pipe 40mm: {pipe.Id}, khoảng cách: {pipeLocation.DistanceTo(papLocation) * 304.8:F0}mm");
+                                LogHelper.Log($"[FIND_40MM] Tìm thấy Pipe 40mm: {pipe.Id}, khoảng cách: {pipeLocation.DistanceTo(papLocation) * 304.8:F0}mm");
                             }
                         }
                     }
@@ -1110,7 +1110,7 @@ namespace Quoc_MEP
                                 if (Math.Abs(diameterMM - 40) < 3)
                                 {
                                     result.Add(fitting);
-                                    Debug.WriteLine($"[FIND_40MM] Tìm thấy Fitting 40mm: {fitting.Id}, khoảng cách: {fittingLocation.DistanceTo(papLocation) * 304.8:F0}mm");
+                                    LogHelper.Log($"[FIND_40MM] Tìm thấy Fitting 40mm: {fitting.Id}, khoảng cách: {fittingLocation.DistanceTo(papLocation) * 304.8:F0}mm");
                                     break;
                                 }
                             }
@@ -1118,11 +1118,11 @@ namespace Quoc_MEP
                     }
                 }
 
-                Debug.WriteLine($"[FIND_40MM] Tổng cộng tìm thấy {result.Count} đối tượng 40mm");
+                LogHelper.Log($"[FIND_40MM] Tổng cộng tìm thấy {result.Count} đối tượng 40mm");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FIND_40MM] Lỗi: {ex.Message}");
+                LogHelper.Log($"[FIND_40MM] Lỗi: {ex.Message}");
             }
 
             return result;
@@ -1136,7 +1136,7 @@ namespace Quoc_MEP
         {
             try
             {
-                Debug.WriteLine($"[FIND_CHAIN] === Tìm chuỗi kết nối từ Pap {pap.Id} ===");
+                LogHelper.Log($"[FIND_CHAIN] === Tìm chuỗi kết nối từ Pap {pap.Id} ===");
                 
                 Pipe pipe40 = null;
                 Element fitting = null;
@@ -1146,11 +1146,11 @@ namespace Quoc_MEP
                 Connector papDownConnector = GetDownwardConnector(pap);
                 if (papDownConnector == null)
                 {
-                    Debug.WriteLine("[FIND_CHAIN] Pap không có connector hướng xuống");
+                    LogHelper.Log("[FIND_CHAIN] Pap không có connector hướng xuống");
                     return (null, null, null);
                 }
 
-                Debug.WriteLine($"[FIND_CHAIN] Connector Pap IsConnected: {papDownConnector.IsConnected}");
+                LogHelper.Log($"[FIND_CHAIN] Connector Pap IsConnected: {papDownConnector.IsConnected}");
 
                 // Tìm element kết nối trực tiếp với Pap (nếu đang connected)
                 Element connectedToPap = null;
@@ -1169,7 +1169,7 @@ namespace Quoc_MEP
                 // Nếu không connected, tìm theo khoảng cách
                 if (connectedToPap == null)
                 {
-                    Debug.WriteLine("[FIND_CHAIN] Connector không connected, tìm theo khoảng cách (5mm)");
+                    LogHelper.Log("[FIND_CHAIN] Connector không connected, tìm theo khoảng cách (5mm)");
                     XYZ papConnPos = papDownConnector.Origin;
                     double searchRadius = 5.0 / 304.8; // 5mm
                     
@@ -1199,18 +1199,18 @@ namespace Quoc_MEP
                         
                         if (connectedToPap != null)
                         {
-                            Debug.WriteLine($"[FIND_CHAIN] Tìm thấy element gần nhất: {connectedToPap.Id} (khoảng cách: {minDist * 304.8:F1}mm)");
+                            LogHelper.Log($"[FIND_CHAIN] Tìm thấy element gần nhất: {connectedToPap.Id} (khoảng cách: {minDist * 304.8:F1}mm)");
                         }
                     }
                 }
 
                 if (connectedToPap == null)
                 {
-                    Debug.WriteLine("[FIND_CHAIN] Không tìm thấy element kết nối với Pap (cả connected và khoảng cách)");
+                    LogHelper.Log("[FIND_CHAIN] Không tìm thấy element kết nối với Pap (cả connected và khoảng cách)");
                     return (null, null, null);
                 }
 
-                Debug.WriteLine($"[FIND_CHAIN] Element kết nối trực tiếp với Pap: {connectedToPap.Id} - {connectedToPap.Category?.Name}");
+                LogHelper.Log($"[FIND_CHAIN] Element kết nối trực tiếp với Pap: {connectedToPap.Id} - {connectedToPap.Category?.Name}");
 
                 // TRƯỜNG HỢP 1: Pap → Pipe 40mm → Fitting → Sprinkler
                 if (connectedToPap is Pipe)
@@ -1223,7 +1223,7 @@ namespace Quoc_MEP
                         if (Math.Abs(diameterMM - 40) < 3)
                         {
                             pipe40 = pipe;
-                            Debug.WriteLine($"[FIND_CHAIN] ✓ Trường hợp 1: Tìm thấy Pipe 40mm: {pipe40.Id}");
+                            LogHelper.Log($"[FIND_CHAIN] ✓ Trường hợp 1: Tìm thấy Pipe 40mm: {pipe40.Id}");
 
                             // Tìm fitting kết nối với pipe này
                             ConnectorManager pipeCM = GetConnectorManager(pipe40);
@@ -1242,13 +1242,13 @@ namespace Quoc_MEP
                                                 if (connectedElem.Category?.Id.IntegerValue == (int)BuiltInCategory.OST_PipeFitting)
                                                 {
                                                     fitting = connectedElem;
-                                                    Debug.WriteLine($"[FIND_CHAIN] ✓ Tìm thấy Fitting: {fitting.Id}");
+                                                    LogHelper.Log($"[FIND_CHAIN] ✓ Tìm thấy Fitting: {fitting.Id}");
 
                                                     // Tìm sprinkler nối với fitting
                                                     sprinkler = FindSprinklerConnectedTo(fitting);
                                                     if (sprinkler != null)
                                                     {
-                                                        Debug.WriteLine($"[FIND_CHAIN] ✓ Tìm thấy Sprinkler: {sprinkler.Id}");
+                                                        LogHelper.Log($"[FIND_CHAIN] ✓ Tìm thấy Sprinkler: {sprinkler.Id}");
                                                     }
                                                     break;
                                                 }
@@ -1265,22 +1265,22 @@ namespace Quoc_MEP
                 else if (connectedToPap.Category?.Id.IntegerValue == (int)BuiltInCategory.OST_PipeFitting)
                 {
                     fitting = connectedToPap;
-                    Debug.WriteLine($"[FIND_CHAIN] ✓ Trường hợp 2: Fitting kết nối trực tiếp: {fitting.Id}");
+                    LogHelper.Log($"[FIND_CHAIN] ✓ Trường hợp 2: Fitting kết nối trực tiếp: {fitting.Id}");
 
                     // Tìm sprinkler
                     sprinkler = FindSprinklerConnectedTo(fitting);
                     if (sprinkler != null)
                     {
-                        Debug.WriteLine($"[FIND_CHAIN] ✓ Tìm thấy Sprinkler: {sprinkler.Id}");
+                        LogHelper.Log($"[FIND_CHAIN] ✓ Tìm thấy Sprinkler: {sprinkler.Id}");
                     }
                 }
 
-                Debug.WriteLine($"[FIND_CHAIN] === Kết quả: Pipe40={pipe40?.Id}, Fitting={fitting?.Id}, Sprinkler={sprinkler?.Id} ===");
+                LogHelper.Log($"[FIND_CHAIN] === Kết quả: Pipe40={pipe40?.Id}, Fitting={fitting?.Id}, Sprinkler={sprinkler?.Id} ===");
                 return (pipe40, fitting, sprinkler);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FIND_CHAIN] Lỗi: {ex.Message}");
+                LogHelper.Log($"[FIND_CHAIN] Lỗi: {ex.Message}");
                 return (null, null, null);
             }
         }
@@ -1337,7 +1337,7 @@ namespace Quoc_MEP
                 Connector papConnector = GetDownwardConnector(pap);
                 if (papConnector == null)
                 {
-                    Debug.WriteLine("[ALIGN_3D] Không tìm thấy connector Pap hướng xuống");
+                    LogHelper.Log("[ALIGN_3D] Không tìm thấy connector Pap hướng xuống");
                     return false;
                 }
 
@@ -1367,15 +1367,15 @@ namespace Quoc_MEP
 
                 bool aligned = deltaX <= tolerance && deltaY <= tolerance && deltaZ <= tolerance;
 
-                Debug.WriteLine($"[ALIGN_3D] Pap {pap.Id} vs Element {element.Id}:");
-                Debug.WriteLine($"[ALIGN_3D]   ΔX: {deltaX * 304.8:F2}mm, ΔY: {deltaY * 304.8:F2}mm, ΔZ: {deltaZ * 304.8:F2}mm");
-                Debug.WriteLine($"[ALIGN_3D]   Aligned: {aligned} (tolerance: {tolerance * 304.8:F1}mm)");
+                LogHelper.Log($"[ALIGN_3D] Pap {pap.Id} vs Element {element.Id}:");
+                LogHelper.Log($"[ALIGN_3D]   ΔX: {deltaX * 304.8:F2}mm, ΔY: {deltaY * 304.8:F2}mm, ΔZ: {deltaZ * 304.8:F2}mm");
+                LogHelper.Log($"[ALIGN_3D]   Aligned: {aligned} (tolerance: {tolerance * 304.8:F1}mm)");
 
                 return aligned;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[ALIGN_3D] Lỗi: {ex.Message}");
+                LogHelper.Log($"[ALIGN_3D] Lỗi: {ex.Message}");
                 return false;
             }
         }
@@ -1391,13 +1391,13 @@ namespace Quoc_MEP
         {
             try
             {
-                Debug.WriteLine($"[ALIGN_MOVE_CONNECT] Bắt đầu align element {element.Id} với Pap {pap.Id}");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Bắt đầu align element {element.Id} với Pap {pap.Id}");
 
                 // Lấy connector của Pap hướng xuống
                 Connector papConnector = GetDownwardConnector(pap);
                 if (papConnector == null)
                 {
-                    Debug.WriteLine("[ALIGN_MOVE_CONNECT] Không tìm thấy connector Pap");
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Không tìm thấy connector Pap");
                     return false;
                 }
 
@@ -1408,7 +1408,7 @@ namespace Quoc_MEP
                 ConnectorManager cm = GetConnectorManager(element);
                 if (cm == null)
                 {
-                    Debug.WriteLine("[ALIGN_MOVE_CONNECT] Element không có connector");
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Element không có connector");
                     return false;
                 }
 
@@ -1424,16 +1424,16 @@ namespace Quoc_MEP
 
                 if (elementConnector == null)
                 {
-                    Debug.WriteLine("[ALIGN_MOVE_CONNECT] Không tìm thấy connector của element");
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Không tìm thấy connector của element");
                     return false;
                 }
 
-                Debug.WriteLine($"[ALIGN_MOVE_CONNECT] Khoảng cách hiện tại: {minDistance * 304.8:F2}mm");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Khoảng cách hiện tại: {minDistance * 304.8:F2}mm");
 
                 // Disconnect nếu đang kết nối
                 if (elementConnector.IsConnected)
                 {
-                    Debug.WriteLine("[ALIGN_MOVE_CONNECT] Disconnect element...");
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Disconnect element...");
                     try
                     {
                         var refs = new List<Connector>();
@@ -1451,7 +1451,7 @@ namespace Quoc_MEP
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"[ALIGN_MOVE_CONNECT] Lỗi disconnect: {ex.Message}");
+                        LogHelper.Log($"[ALIGN_MOVE_CONNECT] Lỗi disconnect: {ex.Message}");
                     }
                 }
 
@@ -1460,13 +1460,13 @@ namespace Quoc_MEP
 
                 // Tính vector di chuyển để align 3D
                 XYZ moveVector = papConnector.Origin - elementConnector.Origin;
-                Debug.WriteLine($"[ALIGN_MOVE_CONNECT] Di chuyển vector: ({moveVector.X * 304.8:F2}, {moveVector.Y * 304.8:F2}, {moveVector.Z * 304.8:F2})mm");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Di chuyển vector: ({moveVector.X * 304.8:F2}, {moveVector.Y * 304.8:F2}, {moveVector.Z * 304.8:F2})mm");
 
                 // Di chuyển element
                 if (moveVector.GetLength() > 0.001) // > ~0.3mm
                 {
                     ElementTransformUtils.MoveElement(doc, element.Id, moveVector);
-                    Debug.WriteLine("[ALIGN_MOVE_CONNECT] Đã di chuyển element");
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Đã di chuyển element");
                 }
 
                 // Connect lại
@@ -1475,27 +1475,27 @@ namespace Quoc_MEP
                     if (!papConnector.IsConnected && !elementConnector.IsConnected)
                     {
                         papConnector.ConnectTo(elementConnector);
-                        Debug.WriteLine("[ALIGN_MOVE_CONNECT] Đã connect element với Pap");
+                        LogHelper.Log("[ALIGN_MOVE_CONNECT] Đã connect element với Pap");
                     }
                     else if (papConnector.IsConnected)
                     {
                         // Thử connect ngược lại
                         elementConnector.ConnectTo(papConnector);
-                        Debug.WriteLine("[ALIGN_MOVE_CONNECT] Đã connect element với Pap (ngược)");
+                        LogHelper.Log("[ALIGN_MOVE_CONNECT] Đã connect element với Pap (ngược)");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[ALIGN_MOVE_CONNECT] Không thể connect (có thể đã connect tự động): {ex.Message}");
+                    LogHelper.Log($"[ALIGN_MOVE_CONNECT] Không thể connect (có thể đã connect tự động): {ex.Message}");
                     // Không return false vì element đã được align rồi
                 }
 
-                Debug.WriteLine($"[ALIGN_MOVE_CONNECT] Hoàn thành align element {element.Id} với Pap {pap.Id}");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Hoàn thành align element {element.Id} với Pap {pap.Id}");
                 return true;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[ALIGN_MOVE_CONNECT] Lỗi: {ex.Message}");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Lỗi: {ex.Message}");
                 return false;
             }
         }
@@ -1510,14 +1510,14 @@ namespace Quoc_MEP
 
             try
             {
-                Debug.WriteLine($"[ALIGN_CHAIN] === Bắt đầu align chuỗi với Pap {pap.Id} ===");
+                LogHelper.Log($"[ALIGN_CHAIN] === Bắt đầu align chuỗi với Pap {pap.Id} ===");
 
                 // Tìm chuỗi kết nối
                 var (pipe40, fitting, sprinkler) = FindPapChain(doc, pap);
 
                 if (pipe40 == null && fitting == null)
                 {
-                    Debug.WriteLine("[ALIGN_CHAIN] Không tìm thấy pipe 40mm hoặc fitting");
+                    LogHelper.Log("[ALIGN_CHAIN] Không tìm thấy pipe 40mm hoặc fitting");
                     details.Add("Không tìm thấy pipe/fitting");
                     return (0, string.Join(", ", details));
                 }
@@ -1526,7 +1526,7 @@ namespace Quoc_MEP
                 if (pipe40 != null)
                 {
                     details.Add($"TH1: Pipe40 ({pipe40.Id})");
-                    Debug.WriteLine($"[ALIGN_CHAIN] Trường hợp 1: Align Pipe 40mm {pipe40.Id}");
+                    LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 1: Align Pipe 40mm {pipe40.Id}");
 
                     // Kiểm tra align
                     bool pipeAligned = IsAligned3D(pap, pipe40, tolerance: 3.0 / 304.8);
@@ -1537,7 +1537,7 @@ namespace Quoc_MEP
                         {
                             alignedCount++;
                             details.Add("✓ Pipe40 aligned");
-                            Debug.WriteLine("[ALIGN_CHAIN] ✓ Pipe 40mm đã được align");
+                            LogHelper.Log("[ALIGN_CHAIN] ✓ Pipe 40mm đã được align");
                         }
                     }
                     else
@@ -1548,7 +1548,7 @@ namespace Quoc_MEP
                     // Align fitting nếu có
                     if (fitting != null)
                     {
-                        Debug.WriteLine($"[ALIGN_CHAIN] Kiểm tra Fitting {fitting.Id}");
+                        LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Fitting {fitting.Id}");
                         bool fittingAligned = IsAligned3D(pipe40, fitting, tolerance: 3.0 / 304.8);
                         if (!fittingAligned)
                         {
@@ -1558,7 +1558,7 @@ namespace Quoc_MEP
                             {
                                 alignedCount++;
                                 details.Add($"✓ Fitting ({fitting.Id}) aligned");
-                                Debug.WriteLine("[ALIGN_CHAIN] ✓ Fitting đã được align với Pipe40");
+                                LogHelper.Log("[ALIGN_CHAIN] ✓ Fitting đã được align với Pipe40");
                             }
                         }
                         else
@@ -1571,7 +1571,7 @@ namespace Quoc_MEP
                 else if (fitting != null)
                 {
                     details.Add($"TH2: Fitting ({fitting.Id})");
-                    Debug.WriteLine($"[ALIGN_CHAIN] Trường hợp 2: Align Fitting {fitting.Id} trực tiếp với Pap");
+                    LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 2: Align Fitting {fitting.Id} trực tiếp với Pap");
 
                     bool fittingAligned = IsAligned3D(pap, fitting, tolerance: 3.0 / 304.8);
                     if (!fittingAligned)
@@ -1581,7 +1581,7 @@ namespace Quoc_MEP
                         {
                             alignedCount++;
                             details.Add("✓ Fitting aligned");
-                            Debug.WriteLine("[ALIGN_CHAIN] ✓ Fitting đã được align");
+                            LogHelper.Log("[ALIGN_CHAIN] ✓ Fitting đã được align");
                         }
                     }
                     else
@@ -1595,11 +1595,11 @@ namespace Quoc_MEP
                     details.Add($"Sprinkler: {sprinkler.Id}");
                 }
 
-                Debug.WriteLine($"[ALIGN_CHAIN] === Hoàn thành: {alignedCount} element aligned ===");
+                LogHelper.Log($"[ALIGN_CHAIN] === Hoàn thành: {alignedCount} element aligned ===");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[ALIGN_CHAIN] Lỗi: {ex.Message}");
+                LogHelper.Log($"[ALIGN_CHAIN] Lỗi: {ex.Message}");
                 details.Add($"Lỗi: {ex.Message}");
             }
 
@@ -1898,8 +1898,8 @@ namespace Quoc_MEP
         public static AlignmentResult AlignChainFromPap(Document doc, Element pap)
         {
             var result = new AlignmentResult();
-            Debug.WriteLine("========== AlignChainFromPap START ==========");
-            Debug.WriteLine($"Pap Id: {pap.Id}, Name: {pap.Name}");
+            LogHelper.Log("========== AlignChainFromPap START ==========");
+            LogHelper.Log($"Pap Id: {pap.Id}, Name: {pap.Name}");
 
             try
             {
@@ -1907,13 +1907,13 @@ namespace Quoc_MEP
                 Pipe mainPipe = FindPipeByDiameter(pap, 65.0, 5.0); // 65mm ± 5mm
                 XYZ rotationCenter = null;
                 
-                Debug.WriteLine($"[Step 1] Tìm ống 65mm: {(mainPipe != null ? $"Found (Id: {mainPipe.Id}, Diameter: {GetPipeDiameterMM(mainPipe):F1}mm)" : "NOT FOUND")}");
+                LogHelper.Log($"[Step 1] Tìm ống 65mm: {(mainPipe != null ? $"Found (Id: {mainPipe.Id}, Diameter: {GetPipeDiameterMM(mainPipe):F1}mm)" : "NOT FOUND")}");
 
                 if (mainPipe != null)
                 {
                     // Tìm giao điểm center line ống 65 với vector Pap
                     rotationCenter = GetRotationCenter(pap, mainPipe);
-                    Debug.WriteLine($"[Step 1] Rotation Center: {(rotationCenter != null ? $"({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})" : "NULL")}");
+                    LogHelper.Log($"[Step 1] Rotation Center: {(rotationCenter != null ? $"({rotationCenter.X:F3}, {rotationCenter.Y:F3}, {rotationCenter.Z:F3})" : "NULL")}");
                 }
                 else
                 {
@@ -1924,43 +1924,43 @@ namespace Quoc_MEP
 
                 // Bước 2: Lấy element kết nối phía dưới Pap
                 Element nextElement = GetDownwardConnectedElement(pap);
-                Debug.WriteLine($"[Step 2] Element phía dưới Pap: {(nextElement != null ? $"{nextElement.GetType().Name} (Id: {nextElement.Id}, Name: {nextElement.Name})" : "NULL")}");
+                LogHelper.Log($"[Step 2] Element phía dưới Pap: {(nextElement != null ? $"{nextElement.GetType().Name} (Id: {nextElement.Id}, Name: {nextElement.Name})" : "NULL")}");
                 
                 if (nextElement == null)
                 {
-                    Debug.WriteLine("[Step 2] ERROR: Không tìm thấy element kết nối phía dưới Pap");
+                    LogHelper.Log("[Step 2] ERROR: Không tìm thấy element kết nối phía dưới Pap");
                     result.ErrorMessage = "Không tìm thấy element kết nối phía dưới Pap";
                     return result;
                 }
 
                 // Lấy connectors kết nối giữa Pap và nextElement
                 var (papConn, nextConn) = GetConnectingConnectors(pap, nextElement);
-                Debug.WriteLine($"[Step 2] Connectors - Pap: {(papConn != null ? $"({papConn.Origin.X:F3}, {papConn.Origin.Y:F3}, {papConn.Origin.Z:F3})" : "NULL")}");
-                Debug.WriteLine($"[Step 2] Connectors - Next: {(nextConn != null ? $"({nextConn.Origin.X:F3}, {nextConn.Origin.Y:F3}, {nextConn.Origin.Z:F3})" : "NULL")}");
+                LogHelper.Log($"[Step 2] Connectors - Pap: {(papConn != null ? $"({papConn.Origin.X:F3}, {papConn.Origin.Y:F3}, {papConn.Origin.Z:F3})" : "NULL")}");
+                LogHelper.Log($"[Step 2] Connectors - Next: {(nextConn != null ? $"({nextConn.Origin.X:F3}, {nextConn.Origin.Y:F3}, {nextConn.Origin.Z:F3})" : "NULL")}");
                 
                 if (papConn != null && nextConn != null)
                 {
                     bool aligned = IsAlignedVertically(papConn.Origin, nextConn.Origin);
-                    Debug.WriteLine($"[Step 2] IsAlignedVertically: {aligned}");
+                    LogHelper.Log($"[Step 2] IsAlignedVertically: {aligned}");
                 }
 
                 // Xác định loại element tiếp theo
                 if (nextElement is Pipe pipe40)
                 {
                     double diameter = GetPipeDiameterMM(pipe40);
-                    Debug.WriteLine($"[Step 2] Pipe detected - Diameter: {diameter:F1}mm");
+                    LogHelper.Log($"[Step 2] Pipe detected - Diameter: {diameter:F1}mm");
                     
                     if (Math.Abs(diameter - 40.0) < 5.0) // Pipe 40mm
                     {
-                        Debug.WriteLine("[CASE 1] Pap → Pipe 40mm → Reducing → Sprinkler");
+                        LogHelper.Log("[CASE 1] Pap → Pipe 40mm → Reducing → Sprinkler");
                         
                         // Kiểm tra và căn chỉnh Pap với Pipe 40
                         if (papConn != null && nextConn != null && !IsAlignedVertically(papConn.Origin, nextConn.Origin))
                         {
-                            Debug.WriteLine("[CASE 1] Căn chỉnh Pap với Pipe 40...");
+                            LogHelper.Log("[CASE 1] Căn chỉnh Pap với Pipe 40...");
                             result.ElementsNeedAlignment.Add(pipe40);
                             bool aligned = AlignTwoElements(doc, pap, pipe40, papConn, nextConn);
-                            Debug.WriteLine($"[CASE 1] Kết quả căn chỉnh Pap-Pipe40: {aligned}");
+                            LogHelper.Log($"[CASE 1] Kết quả căn chỉnh Pap-Pipe40: {aligned}");
                             if (aligned)
                             {
                                 result.ElementsAligned.Add(pipe40);
@@ -1969,17 +1969,17 @@ namespace Quoc_MEP
 
                         // Tiếp tục với Reducing
                         Element reducing = GetDownwardConnectedElement(pipe40);
-                        Debug.WriteLine($"[CASE 1] Reducing: {(reducing != null ? $"Id: {reducing.Id}, IsReducing: {IsReducingOrCoupling(reducing)}" : "NULL")}");
+                        LogHelper.Log($"[CASE 1] Reducing: {(reducing != null ? $"Id: {reducing.Id}, IsReducing: {IsReducingOrCoupling(reducing)}" : "NULL")}");
                         
                         if (reducing != null && IsReducingOrCoupling(reducing))
                         {
                             var (pipeConn, reducingConn) = GetConnectingConnectors(pipe40, reducing);
                             if (pipeConn != null && reducingConn != null && !IsAlignedVertically(pipeConn.Origin, reducingConn.Origin))
                             {
-                                Debug.WriteLine("[CASE 1] Căn chỉnh Pipe40 với Reducing...");
+                                LogHelper.Log("[CASE 1] Căn chỉnh Pipe40 với Reducing...");
                                 result.ElementsNeedAlignment.Add(reducing);
                                 bool aligned = AlignTwoElements(doc, pipe40, reducing, pipeConn, reducingConn);
-                                Debug.WriteLine($"[CASE 1] Kết quả căn chỉnh Pipe40-Reducing: {aligned}");
+                                LogHelper.Log($"[CASE 1] Kết quả căn chỉnh Pipe40-Reducing: {aligned}");
                                 if (aligned)
                                 {
                                     result.ElementsAligned.Add(reducing);
@@ -1988,17 +1988,17 @@ namespace Quoc_MEP
 
                             // Tiếp tục với Sprinkler
                             Element sprinkler = GetDownwardConnectedElement(reducing);
-                            Debug.WriteLine($"[CASE 1] Sprinkler: {(sprinkler != null ? $"Id: {sprinkler.Id}, IsSprinkler: {IsSprinkler(sprinkler)}" : "NULL")}");
+                            LogHelper.Log($"[CASE 1] Sprinkler: {(sprinkler != null ? $"Id: {sprinkler.Id}, IsSprinkler: {IsSprinkler(sprinkler)}" : "NULL")}");
                             
                             if (sprinkler != null && IsSprinkler(sprinkler))
                             {
                                 var (redConn, sprConn) = GetConnectingConnectors(reducing, sprinkler);
                                 if (redConn != null && sprConn != null && !IsAlignedVertically(redConn.Origin, sprConn.Origin))
                                 {
-                                    Debug.WriteLine("[CASE 1] Căn chỉnh Reducing với Sprinkler...");
+                                    LogHelper.Log("[CASE 1] Căn chỉnh Reducing với Sprinkler...");
                                     result.ElementsNeedAlignment.Add(sprinkler);
                                     bool aligned = AlignTwoElements(doc, reducing, sprinkler, redConn, sprConn);
-                                    Debug.WriteLine($"[CASE 1] Kết quả căn chỉnh Reducing-Sprinkler: {aligned}");
+                                    LogHelper.Log($"[CASE 1] Kết quả căn chỉnh Reducing-Sprinkler: {aligned}");
                                     if (aligned)
                                     {
                                         result.ElementsAligned.Add(sprinkler);
@@ -2011,15 +2011,15 @@ namespace Quoc_MEP
                 else if (IsReducingOrCoupling(nextElement))
                 {
                     // TRƯỜNG HỢP 2: Pap → Reducing → Sprinkler (không có Pipe 40)
-                    Debug.WriteLine("[CASE 2] Pap → Reducing → Sprinkler (không có Pipe 40)");
+                    LogHelper.Log("[CASE 2] Pap → Reducing → Sprinkler (không có Pipe 40)");
                     
                     // Kiểm tra và căn chỉnh Pap với Reducing
                     if (papConn != null && nextConn != null && !IsAlignedVertically(papConn.Origin, nextConn.Origin))
                     {
-                        Debug.WriteLine("[CASE 2] Căn chỉnh Pap với Reducing...");
+                        LogHelper.Log("[CASE 2] Căn chỉnh Pap với Reducing...");
                         result.ElementsNeedAlignment.Add(nextElement);
                         bool aligned = AlignTwoElements(doc, pap, nextElement, papConn, nextConn);
-                        Debug.WriteLine($"[CASE 2] Kết quả căn chỉnh Pap-Reducing: {aligned}");
+                        LogHelper.Log($"[CASE 2] Kết quả căn chỉnh Pap-Reducing: {aligned}");
                         if (aligned)
                         {
                             result.ElementsAligned.Add(nextElement);
@@ -2028,17 +2028,17 @@ namespace Quoc_MEP
 
                     // Tiếp tục với Sprinkler
                     Element sprinkler = GetDownwardConnectedElement(nextElement);
-                    Debug.WriteLine($"[CASE 2] Sprinkler: {(sprinkler != null ? $"Id: {sprinkler.Id}" : "NULL")}");
+                    LogHelper.Log($"[CASE 2] Sprinkler: {(sprinkler != null ? $"Id: {sprinkler.Id}" : "NULL")}");
                     
                     if (sprinkler != null && IsSprinkler(sprinkler))
                     {
                         var (redConn, sprConn) = GetConnectingConnectors(nextElement, sprinkler);
                         if (redConn != null && sprConn != null && !IsAlignedVertically(redConn.Origin, sprConn.Origin))
                         {
-                            Debug.WriteLine("[CASE 2] Căn chỉnh Reducing với Sprinkler...");
+                            LogHelper.Log("[CASE 2] Căn chỉnh Reducing với Sprinkler...");
                             result.ElementsNeedAlignment.Add(sprinkler);
                             bool aligned = AlignTwoElements(doc, nextElement, sprinkler, redConn, sprConn);
-                            Debug.WriteLine($"[CASE 2] Kết quả căn chỉnh Reducing-Sprinkler: {aligned}");
+                            LogHelper.Log($"[CASE 2] Kết quả căn chỉnh Reducing-Sprinkler: {aligned}");
                             if (aligned)
                             {
                                 result.ElementsAligned.Add(sprinkler);
@@ -2049,14 +2049,14 @@ namespace Quoc_MEP
                 else if (IsSprinkler(nextElement))
                 {
                     // TRƯỜNG HỢP 3: Pap → Sprinkler trực tiếp
-                    Debug.WriteLine("[CASE 3] Pap → Sprinkler trực tiếp");
+                    LogHelper.Log("[CASE 3] Pap → Sprinkler trực tiếp");
                     
                     if (papConn != null && nextConn != null && !IsAlignedVertically(papConn.Origin, nextConn.Origin))
                     {
-                        Debug.WriteLine("[CASE 3] Căn chỉnh Pap với Sprinkler...");
+                        LogHelper.Log("[CASE 3] Căn chỉnh Pap với Sprinkler...");
                         result.ElementsNeedAlignment.Add(nextElement);
                         bool aligned = AlignTwoElements(doc, pap, nextElement, papConn, nextConn);
-                        Debug.WriteLine($"[CASE 3] Kết quả căn chỉnh Pap-Sprinkler: {aligned}");
+                        LogHelper.Log($"[CASE 3] Kết quả căn chỉnh Pap-Sprinkler: {aligned}");
                         if (aligned)
                         {
                             result.ElementsAligned.Add(nextElement);
@@ -2065,34 +2065,34 @@ namespace Quoc_MEP
                 }
                 else
                 {
-                    Debug.WriteLine($"[WARNING] Element không xác định loại: {nextElement.GetType().Name}");
+                    LogHelper.Log($"[WARNING] Element không xác định loại: {nextElement.GetType().Name}");
                 }
 
                 // Bước 3: Quay cả cụm quanh tâm quay nếu cần (để vector Pap-Sprinkler thẳng đứng)
-                Debug.WriteLine("[Step 3] Kiểm tra xoay cụm...");
-                Debug.WriteLine($"[Step 3] rotationCenter: {(rotationCenter != null ? "OK" : "NULL")}, mainPipe: {(mainPipe != null ? "OK" : "NULL")}");
+                LogHelper.Log("[Step 3] Kiểm tra xoay cụm...");
+                LogHelper.Log($"[Step 3] rotationCenter: {(rotationCenter != null ? "OK" : "NULL")}, mainPipe: {(mainPipe != null ? "OK" : "NULL")}");
                 
                 if (rotationCenter != null && mainPipe != null)
                 {
                     Element sprinkler = FindSprinklerInChain(pap, doc);
-                    Debug.WriteLine($"[Step 3] Sprinkler trong chuỗi: {(sprinkler != null ? $"Id: {sprinkler.Id}" : "NULL")}");
+                    LogHelper.Log($"[Step 3] Sprinkler trong chuỗi: {(sprinkler != null ? $"Id: {sprinkler.Id}" : "NULL")}");
                     
                     if (sprinkler != null)
                     {
                         XYZ papPos = GetElementLocation(pap);
                         XYZ sprPos = GetElementLocation(sprinkler);
-                        Debug.WriteLine($"[Step 3] Pap Position: ({papPos?.X:F3}, {papPos?.Y:F3}, {papPos?.Z:F3})");
-                        Debug.WriteLine($"[Step 3] Sprinkler Position: ({sprPos?.X:F3}, {sprPos?.Y:F3}, {sprPos?.Z:F3})");
+                        LogHelper.Log($"[Step 3] Pap Position: ({papPos?.X:F3}, {papPos?.Y:F3}, {papPos?.Z:F3})");
+                        LogHelper.Log($"[Step 3] Sprinkler Position: ({sprPos?.X:F3}, {sprPos?.Y:F3}, {sprPos?.Z:F3})");
 
                         if (papPos != null && sprPos != null && !IsParallelToZAxis(papPos, sprPos))
                         {
                             double angle = GetAngleWithZAxis(papPos, sprPos);
                             double angleDegrees = angle * 180.0 / Math.PI;
-                            Debug.WriteLine($"[Step 3] Góc với trục Z: {angleDegrees:F2}°");
+                            LogHelper.Log($"[Step 3] Góc với trục Z: {angleDegrees:F2}°");
 
                             if (angleDegrees > 0.1)
                             {
-                                Debug.WriteLine($"[Step 3] Cần xoay {angleDegrees:F2}° để thẳng đứng");
+                                LogHelper.Log($"[Step 3] Cần xoay {angleDegrees:F2}° để thẳng đứng");
                                 result.RotationApplied = true;
                                 result.RotationAngle = angleDegrees;
 

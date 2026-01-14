@@ -24,6 +24,9 @@ namespace Quoc_MEP
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
+            LogHelper.Log("=== BẮT ĐẦU ALIGN SPRINKLER COMMAND ===");
+            LogHelper.Log($"Log file: {LogHelper.GetLogPath()}");
+
             try
             {
                 // Bước 1: Chọn nhiều Pap (Pipe Accessory Point)
@@ -67,7 +70,7 @@ namespace Quoc_MEP
                         // Flow cho MỖI Pap: Xoay Pap → Tìm chain → Align chain → Xong Pap này → Sang Pap khác
                         foreach (Element pap in paps)
                         {
-                            Debug.WriteLine($"\n========== BẮT ĐẦU XỬ LÝ PAP {pap.Id} ==========");
+                            LogHelper.Log($"\n========== BẮT ĐẦU XỬ LÝ PAP {pap.Id} ==========");
                             
                             // Xử lý RIÊNG LẺ Pap này: Xoay + Tìm + Align trong 1 lần gọi
                             // Không tách rời: tìm tất cả trước rồi mới align sau
@@ -93,7 +96,7 @@ namespace Quoc_MEP
                                     rotationDetails.Add($"Pap {pap.Id}: {result.ErrorMessage}");
                                 }
                                 
-                                Debug.WriteLine($"========== HOÀN THÀNH PAP {pap.Id} ==========\n");
+                                LogHelper.Log($"========== HOÀN THÀNH PAP {pap.Id} ==========\n");
                             }
                             else
                             {
@@ -102,7 +105,7 @@ namespace Quoc_MEP
                                 {
                                     errors.Add($"Pap {pap.Id}: {result.ErrorMessage}");
                                 }
-                                Debug.WriteLine($"========== THẤT BẠI PAP {pap.Id} ==========\n");
+                                LogHelper.Log($"========== THẤT BẠI PAP {pap.Id} ==========\n");
                             }
                         }
 
@@ -140,6 +143,8 @@ namespace Quoc_MEP
                                     }
                                 }
                             }
+                            
+                            msg += $"\n\n📄 Log file: {LogHelper.GetLogPath()}";
                             TaskDialog.Show("Kết quả", msg);
 
                             return Result.Succeeded;
