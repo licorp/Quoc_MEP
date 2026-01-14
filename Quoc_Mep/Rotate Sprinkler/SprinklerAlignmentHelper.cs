@@ -1605,16 +1605,20 @@ namespace Quoc_MEP
                                 LogHelper.Log($"[ALIGN_CHAIN] Chọn Fitting 40mm gần nhất: {fitting.Id}");
                             }
                         }
-                        
-                        // Tìm sprinkler gần fitting nếu có fitting
-                        if (fitting != null && sprinkler == null)
-                        {
-                            sprinkler = FindSprinklerNearElement(doc, fitting, searchRadius: 3.0);
-                            if (sprinkler != null)
-                            {
-                                LogHelper.Log($"[ALIGN_CHAIN] Tìm thấy Sprinkler gần Fitting: {sprinkler.Id}");
-                            }
-                        }
+                    }
+                }
+
+                // Luôn tìm sprinkler nếu có fitting (không phân biệt tìm qua connector hay distance)
+                if (fitting != null && sprinkler == null)
+                {
+                    sprinkler = FindSprinklerNearElement(doc, fitting, searchRadius: 3.0);
+                    if (sprinkler != null)
+                    {
+                        LogHelper.Log($"[ALIGN_CHAIN] Tìm thấy Sprinkler gần Fitting: {sprinkler.Id}");
+                    }
+                    else
+                    {
+                        LogHelper.Log("[ALIGN_CHAIN] Không tìm thấy Sprinkler gần Fitting trong bán kính 3 feet");
                     }
                 }
 
