@@ -1615,31 +1615,10 @@ namespace Quoc_MEP
                                 LogHelper.Log($"[ALIGN_CHAIN] Tìm thấy Sprinkler gần Fitting: {sprinkler.Id}");
                             }
                         }
-                        
-                        // Nếu không có fitting, thử tìm sprinkler gần Pap trực tiếp
-                        if (fitting == null && sprinkler == null)
-                        {
-                            sprinkler = FindSprinklerNearElement(doc, pap, searchRadius: 3.0);
-                            if (sprinkler != null)
-                            {
-                                LogHelper.Log($"[ALIGN_CHAIN] Tìm thấy Sprinkler gần Pap (không có fitting): {sprinkler.Id}");
-                            }
-                        }
                     }
                 }
 
-                // Nếu không tìm thấy pipe40 và fitting, nhưng có sprinkler → Trường hợp Pap → Sprinkler trực tiếp
-                if (pipe40 == null && fitting == null && sprinkler == null)
-                {
-                    LogHelper.Log("[ALIGN_CHAIN] Không tìm thấy pipe/fitting, thử tìm sprinkler trực tiếp gần Pap...");
-                    sprinkler = FindSprinklerNearElement(doc, pap, searchRadius: 3.0);
-                    if (sprinkler != null)
-                    {
-                        LogHelper.Log($"[ALIGN_CHAIN] Tìm thấy Sprinkler kết nối trực tiếp: {sprinkler.Id}");
-                    }
-                }
-
-                if (pipe40 == null && fitting == null && sprinkler == null)
+                if (pipe40 == null && fitting == null)
                 {
                     LogHelper.Log("[ALIGN_CHAIN] Không tìm thấy pipe 40mm hoặc fitting (cả connector và khoảng cách)");
                     details.Add("Không tìm thấy pipe/fitting 40mm trong bán kính 3 feet");
@@ -1753,28 +1732,6 @@ namespace Quoc_MEP
                         {
                             details.Add($"Sprinkler ({sprinkler.Id}) đã align");
                         }
-                    }
-                }
-                // TRƯỜNG HỢP 3: Pap → Sprinkler trực tiếp (không có pipe và fitting)
-                else if (sprinkler != null)
-                {
-                    details.Add($"TH3: Sprinkler ({sprinkler.Id}) trực tiếp");
-                    LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 3: Align Sprinkler {sprinkler.Id} trực tiếp với Pap (không có pipe/fitting)");
-
-                    bool sprinklerAligned = IsAligned3D(pap, sprinkler, tolerance: 3.0 / 304.8);
-                    if (!sprinklerAligned)
-                    {
-                        bool success = AlignMoveConnectWithPap(doc, pap, sprinkler);
-                        if (success)
-                        {
-                            alignedCount++;
-                            details.Add($"✓ Sprinkler aligned trực tiếp");
-                            LogHelper.Log("[ALIGN_CHAIN] ✓ Sprinkler đã được align trực tiếp với Pap");
-                        }
-                    }
-                    else
-                    {
-                        details.Add($"Sprinkler đã align");
                     }
                 }
 
