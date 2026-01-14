@@ -1381,31 +1381,35 @@ namespace Quoc_MEP
         }
 
         /// <summary>
-        /// Align, move và connect element với Pap
+        /// Align, move và connect element với Pap (hoặc element khác)
         /// </summary>
         /// <param name="doc">Document</param>
-        /// <param name="pap">Pap element (cố định)</param>
-        /// <param name="element">Element cần align (pipe hoặc fitting 40mm)</param>
+        /// <param name="referenceElement">Element tham chiếu (Pap hoặc Pipe)</param>
+        /// <param name="elementToMove">Element cần align và di chuyển (pipe hoặc fitting 40mm)</param>
         /// <returns>True nếu thành công</returns>
-        public static bool AlignMoveConnectWithPap(Document doc, Element pap, Element element)
+        public static bool AlignMoveConnectWithPap(Document doc, Element referenceElement, Element elementToMove)
         {
             try
             {
-                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Bắt đầu align element {element.Id} với Pap {pap.Id}");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Bắt đầu align {elementToMove.Category?.Name} {elementToMove.Id} với {referenceElement.Category?.Name} {referenceElement.Id}");
 
-                // Lấy connector của Pap hướng xuống
-                Connector papConnector = GetDownwardConnector(pap);
-                if (papConnector == null)
+                // Lấy connector của reference element hướng xuống
+                Connector refConnector = GetDownwardConnector(referenceElement);
+                if (refConnector == null)
                 {
-                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Không tìm thấy connector Pap");
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Không tìm thấy connector reference element");
                     return false;
                 }
 
-                // Lấy connector gần nhất của element
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Connector reference tại: ({refConnector.Origin.X * 304.8:F1}, {refConnector.Origin.Y * 304.8:F1}, {refConnector.Origin.Z * 304.8:F1})mm");
+
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Connector reference tại: ({refConnector.Origin.X * 304.8:F1}, {refConnector.Origin.Y * 304.8:F1}, {refConnector.Origin.Z * 304.8:F1})mm");
+
+                // Lấy connector gần nhất của element cần di chuyển
                 Connector elementConnector = null;
                 double minDistance = double.MaxValue;
                 
-                ConnectorManager cm = GetConnectorManager(element);
+                ConnectorManager cm = GetConnectorManager(elementToMove);
                 if (cm == null)
                 {
                     LogHelper.Log("[ALIGN_MOVE_CONNECT] Element không có connector");
@@ -1414,7 +1418,7 @@ namespace Quoc_MEP
 
                 foreach (Connector conn in cm.Connectors)
                 {
-                    double distance = conn.Origin.DistanceTo(papConnector.Origin);
+                    double distance = conn.Origin.DistanceTo(refConnector.Origin);
                     if (distance < minDistance)
                     {
                         minDistance = distance;
@@ -1428,7 +1432,8 @@ namespace Quoc_MEP
                     return false;
                 }
 
-                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Khoảng cách hiện tại: {minDistance * 304.8:F2}mm");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Connector element tại: ({elementConnector.Origin.X * 304.8:F1}, {elementConnector.Origin.Y * 304.8:F1}, {elementConnector.Origin.Z * 304.8:F1})mm");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Khoảng cách hiện tại: {minDistance * 304.8:F1}mm");
 
                 // Disconnect nếu đang kết nối
                 if (elementConnector.IsConnected)
@@ -1439,7 +1444,7 @@ namespace Quoc_MEP
                         var refs = new List<Connector>();
                         foreach (Connector c in elementConnector.AllRefs)
                         {
-                            if (c.Owner.Id != element.Id)
+                            if (c.Owner.Id != elementToMove.Id)
                             {
                                 refs.Add(c);
                             }
@@ -1448,6 +1453,7 @@ namespace Quoc_MEP
                         {
                             elementConnector.DisconnectFrom(c);
                         }
+                        LogHelper.Log($"[ALIGN_MOVE_CONNECT] Đã disconnect {refs.Count} connector");
                     }
                     catch (Exception ex)
                     {
@@ -1456,41 +1462,45 @@ namespace Quoc_MEP
                 }
 
                 // Unpin element
-                ConnectionHelper.UnpinElementIfPinned(doc, element);
+                ConnectionHelper.UnpinElementIfPinned(doc, elementToMove);
 
                 // Tính vector di chuyển để align 3D
-                XYZ moveVector = papConnector.Origin - elementConnector.Origin;
-                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Di chuyển vector: ({moveVector.X * 304.8:F2}, {moveVector.Y * 304.8:F2}, {moveVector.Z * 304.8:F2})mm");
+                XYZ moveVector = refConnector.Origin - elementConnector.Origin;
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Di chuyển vector: ({moveVector.X * 304.8:F1}, {moveVector.Y * 304.8:F1}, {moveVector.Z * 304.8:F1})mm (độ dài: {moveVector.GetLength() * 304.8:F1}mm)");
 
                 // Di chuyển element
                 if (moveVector.GetLength() > 0.001) // > ~0.3mm
                 {
-                    ElementTransformUtils.MoveElement(doc, element.Id, moveVector);
-                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Đã di chuyển element");
+                    ElementTransformUtils.MoveElement(doc, elementToMove.Id, moveVector);
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] ✓ Đã di chuyển element");
+                }
+                else
+                {
+                    LogHelper.Log("[ALIGN_MOVE_CONNECT] Element đã ở đúng vị trí, không cần di chuyển");
                 }
 
                 // Connect lại
                 try
                 {
-                    if (!papConnector.IsConnected && !elementConnector.IsConnected)
+                    LogHelper.Log($"[ALIGN_MOVE_CONNECT] Kết nối: refConn.IsConnected={refConnector.IsConnected}, elemConn.IsConnected={elementConnector.IsConnected}");
+                    
+                    if (!refConnector.IsConnected || !elementConnector.IsConnected)
                     {
-                        papConnector.ConnectTo(elementConnector);
-                        LogHelper.Log("[ALIGN_MOVE_CONNECT] Đã connect element với Pap");
+                        refConnector.ConnectTo(elementConnector);
+                        LogHelper.Log("[ALIGN_MOVE_CONNECT] ✓ Đã connect element với reference");
                     }
-                    else if (papConnector.IsConnected)
+                    else
                     {
-                        // Thử connect ngược lại
-                        elementConnector.ConnectTo(papConnector);
-                        LogHelper.Log("[ALIGN_MOVE_CONNECT] Đã connect element với Pap (ngược)");
+                        LogHelper.Log("[ALIGN_MOVE_CONNECT] Cả 2 connector đã connected với element khác");
                     }
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.Log($"[ALIGN_MOVE_CONNECT] Không thể connect (có thể đã connect tự động): {ex.Message}");
-                    // Không return false vì element đã được align rồi
+                    LogHelper.Log($"[ALIGN_MOVE_CONNECT] Không thể connect (có thể đã auto-connect hoặc lỗi): {ex.Message}");
+                    // Không return false vì element đã được align và di chuyển rồi
                 }
 
-                LogHelper.Log($"[ALIGN_MOVE_CONNECT] Hoàn thành align element {element.Id} với Pap {pap.Id}");
+                LogHelper.Log($"[ALIGN_MOVE_CONNECT] ✓ Hoàn thành align {elementToMove.Category?.Name} {elementToMove.Id} với {referenceElement.Category?.Name} {referenceElement.Id}");
                 return true;
             }
             catch (Exception ex)
@@ -1512,13 +1522,42 @@ namespace Quoc_MEP
             {
                 LogHelper.Log($"[ALIGN_CHAIN] === Bắt đầu align chuỗi với Pap {pap.Id} ===");
 
-                // Tìm chuỗi kết nối
+                // Tìm chuỗi kết nối qua connector
                 var (pipe40, fitting, sprinkler) = FindPapChain(doc, pap);
+
+                // Nếu không tìm thấy qua connector, tìm theo khoảng cách
+                if (pipe40 == null && fitting == null)
+                {
+                    LogHelper.Log("[ALIGN_CHAIN] Không tìm thấy qua connector, tìm theo khoảng cách...");
+                    
+                    // Tìm tất cả pipe/fitting 40mm gần Pap (bán kính 3 feet)
+                    List<Element> nearElements = Find40mmElementsNearPap(doc, pap, searchRadius: 3.0);
+                    
+                    if (nearElements.Count > 0)
+                    {
+                        LogHelper.Log($"[ALIGN_CHAIN] Tìm thấy {nearElements.Count} pipe/fitting 40mm gần Pap");
+                        
+                        // Phân loại pipe và fitting
+                        foreach (var elem in nearElements)
+                        {
+                            if (elem is Pipe && pipe40 == null)
+                            {
+                                pipe40 = elem as Pipe;
+                                LogHelper.Log($"[ALIGN_CHAIN] Chọn Pipe 40mm gần nhất: {pipe40.Id}");
+                            }
+                            else if (elem.Category?.Id.IntegerValue == (int)BuiltInCategory.OST_PipeFitting && fitting == null)
+                            {
+                                fitting = elem;
+                                LogHelper.Log($"[ALIGN_CHAIN] Chọn Fitting 40mm gần nhất: {fitting.Id}");
+                            }
+                        }
+                    }
+                }
 
                 if (pipe40 == null && fitting == null)
                 {
-                    LogHelper.Log("[ALIGN_CHAIN] Không tìm thấy pipe 40mm hoặc fitting");
-                    details.Add("Không tìm thấy pipe/fitting");
+                    LogHelper.Log("[ALIGN_CHAIN] Không tìm thấy pipe 40mm hoặc fitting (cả connector và khoảng cách)");
+                    details.Add("Không tìm thấy pipe/fitting 40mm trong bán kính 3 feet");
                     return (0, string.Join(", ", details));
                 }
 
