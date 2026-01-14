@@ -222,6 +222,7 @@
     <Compile Include="Rotate Sprinkler\AlignSprinklerCommand.cs" />
     <Compile Include="Rotate Sprinkler\SprinklerAlignmentHelper.cs" />
     <Compile Include="Rotate Sprinkler\SimplePapAlignment.cs" />
+    <Compile Include="Rotate Sprinkler\LogHelper.cs" />
     <Compile Include="Selection Filter\SelectionFilter.cs" />
     <Compile Include="Sheet from excel\SheetFromExcelCmd.cs" />
     <Compile Include="Sheet from excel\SheetFromExcelView.xaml.cs">
