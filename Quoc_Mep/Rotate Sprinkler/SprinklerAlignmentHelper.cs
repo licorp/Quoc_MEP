@@ -1385,9 +1385,9 @@ namespace Quoc_MEP
         /// </summary>
         /// <param name="pap">Pap element</param>
         /// <param name="element">Element cần kiểm tra</param>
-        /// <param name="tolerance">Sai số cho phép (feet), mặc định 3mm</param>
+        /// <param name="tolerance">Sai số cho phép (feet), mặc định 1mm</param>
         /// <returns>True nếu đã align 3D</returns>
-        public static bool IsAligned3D(Element pap, Element element, double tolerance = 3.0 / 304.8)
+        public static bool IsAligned3D(Element pap, Element element, double tolerance = 1.0 / 304.8)
         {
             try
             {
@@ -1640,7 +1640,7 @@ namespace Quoc_MEP
                     LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 1: Align Pipe 40mm {pipe40.Id}");
 
                     // Kiểm tra align
-                    bool pipeAligned = IsAligned3D(pap, pipe40, tolerance: 3.0 / 304.8);
+                    bool pipeAligned = IsAligned3D(pap, pipe40, tolerance: 1.0 / 304.8);
                     if (!pipeAligned)
                     {
                         bool success = AlignMoveConnectWithPap(doc, pap, pipe40);
@@ -1660,7 +1660,7 @@ namespace Quoc_MEP
                     if (fitting != null)
                     {
                         LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Fitting {fitting.Id}");
-                        bool fittingAligned = IsAligned3D(pipe40, fitting, tolerance: 3.0 / 304.8);
+                        bool fittingAligned = IsAligned3D(pipe40, fitting, tolerance: 1.0 / 304.8);
                         if (!fittingAligned)
                         {
                             // Align fitting với pipe 40mm
@@ -1681,7 +1681,7 @@ namespace Quoc_MEP
                         if (sprinkler != null)
                         {
                             LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Sprinkler {sprinkler.Id}");
-                            bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 3.0 / 304.8);
+                            bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 1.0 / 304.8);
                             if (!sprinklerAligned)
                             {
                                 bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
@@ -1715,7 +1715,7 @@ namespace Quoc_MEP
                     details.Add($"TH2: Fitting ({fitting.Id})");
                     LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 2: Align Fitting {fitting.Id} trực tiếp với Pap");
 
-                    bool fittingAligned = IsAligned3D(pap, fitting, tolerance: 3.0 / 304.8);
+                    bool fittingAligned = IsAligned3D(pap, fitting, tolerance: 1.0 / 304.8);
                     if (!fittingAligned)
                     {
                         bool success = AlignMoveConnectWithPap(doc, pap, fitting);
@@ -1735,7 +1735,7 @@ namespace Quoc_MEP
                     if (sprinkler != null)
                     {
                         LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Sprinkler {sprinkler.Id}");
-                        bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 3.0 / 304.8);
+                        bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 1.0 / 304.8);
                         if (!sprinklerAligned)
                         {
                             bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
