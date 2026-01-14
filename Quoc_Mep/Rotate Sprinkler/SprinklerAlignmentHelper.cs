@@ -1639,105 +1639,43 @@ namespace Quoc_MEP
                     details.Add($"TH1: Pipe40 ({pipe40.Id})");
                     LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 1: Align Pipe 40mm {pipe40.Id}");
 
-                    // Kiểm tra align
-                    bool pipeAligned = IsAligned3D(pap, pipe40, tolerance: 1.0 / 304.8);
-                    if (!pipeAligned)
+                    // Luôn align Pipe40 với Pap
+                    bool success = AlignMoveConnectWithPap(doc, pap, pipe40);
+                    if (success)
                     {
-                        bool success = AlignMoveConnectWithPap(doc, pap, pipe40);
-                        if (success)
-                        {
-                            alignedCount++;
-                            details.Add("✓ Pipe40 aligned");
-                            LogHelper.Log("[ALIGN_CHAIN] ✓ Pipe 40mm đã được align");
-                        }
+                        alignedCount++;
+                        details.Add("✓ Pipe40 aligned");
+                        LogHelper.Log("[ALIGN_CHAIN] ✓ Pipe 40mm đã được align");
                     }
                     else
                     {
-                        details.Add("Pipe40 đã align");
+                        details.Add("✗ Pipe40 align failed");
+                        LogHelper.Log("[ALIGN_CHAIN] ✗ Không thể align Pipe40");
                     }
 
                     // Align fitting nếu có
                     if (fitting != null)
                     {
-                        LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Fitting {fitting.Id}");
-                        bool fittingAligned = IsAligned3D(pipe40, fitting, tolerance: 1.0 / 304.8);
-                        if (!fittingAligned)
+                        LogHelper.Log($"[ALIGN_CHAIN] Align Fitting {fitting.Id} với Pipe40");
+                        // Luôn align fitting với pipe 40mm
+                        bool success = AlignMoveConnectWithPap(doc, pipe40, fitting);
+                        if (success)
                         {
-                            // Align fitting với pipe 40mm
-                            bool success = AlignMoveConnectWithPap(doc, pipe40, fitting);
-                            if (success)
-                            {
-                                alignedCount++;
-                                details.Add($"✓ Fitting ({fitting.Id}) aligned");
-                                LogHelper.Log("[ALIGN_CHAIN] ✓ Fitting đã được align với Pipe40");
-                            }
+                            alignedCount++;
+                            details.Add($"✓ Fitting ({fitting.Id}) aligned");
+                            LogHelper.Log("[ALIGN_CHAIN] ✓ Fitting đã được align với Pipe40");
                         }
                         else
                         {
-                            details.Add("Fitting đã align");
+                            details.Add("✗ Fitting align failed");
+                            LogHelper.Log("[ALIGN_CHAIN] ✗ Không thể align Fitting");
                         }
                         
                         // Align sprinkler với fitting (nếu có)
                         if (sprinkler != null)
                         {
-                            LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Sprinkler {sprinkler.Id}");
-                            bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 1.0 / 304.8);
-                            if (!sprinklerAligned)
-                            {
-                                bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
-                                if (success)
-                                {
-                                    alignedCount++;
-                                    details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
-                                    LogHelper.Log("[ALIGN_CHAIN] ✓ Sprinkler đã được align với Fitting");
-                                }
-                                else
-                                {
-                                    details.Add("✗ Sprinkler align failed");
-                                    LogHelper.Log("[ALIGN_CHAIN] ✗ Không thể align Sprinkler với Fitting");
-                                }
-                            }
-                            else
-                            {
-                                details.Add($"Sprinkler ({sprinkler.Id}) đã align");
-                            }
-                        }
-                        else
-                        {
-                            LogHelper.Log("[ALIGN_CHAIN] ⚠ TH1: Không tìm thấy Sprinkler gần Fitting");
-                            details.Add("⚠ Không tìm thấy Sprinkler");
-                        }
-                    }
-                }
-                // TRƯỜNG HỢP 2: Pap → Fitting (trực tiếp)
-                else if (fitting != null)
-                {
-                    details.Add($"TH2: Fitting ({fitting.Id})");
-                    LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 2: Align Fitting {fitting.Id} trực tiếp với Pap");
-
-                    bool fittingAligned = IsAligned3D(pap, fitting, tolerance: 1.0 / 304.8);
-                    if (!fittingAligned)
-                    {
-                        bool success = AlignMoveConnectWithPap(doc, pap, fitting);
-                        if (success)
-                        {
-                            alignedCount++;
-                            details.Add("✓ Fitting aligned");
-                            LogHelper.Log("[ALIGN_CHAIN] ✓ Fitting đã được align");
-                        }
-                    }
-                    else
-                    {
-                        details.Add("Fitting đã align");
-                    }
-                    
-                    // Align sprinkler với fitting (nếu có)
-                    if (sprinkler != null)
-                    {
-                        LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Sprinkler {sprinkler.Id}");
-                        bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 1.0 / 304.8);
-                        if (!sprinklerAligned)
-                        {
+                            LogHelper.Log($"[ALIGN_CHAIN] Align Sprinkler {sprinkler.Id} với Fitting");
+                            // Luôn align sprinkler với fitting
                             bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
                             if (success)
                             {
@@ -1753,7 +1691,47 @@ namespace Quoc_MEP
                         }
                         else
                         {
-                            details.Add($"Sprinkler ({sprinkler.Id}) đã align");
+                            LogHelper.Log("[ALIGN_CHAIN] ⚠ TH1: Không tìm thấy Sprinkler gần Fitting");
+                            details.Add("⚠ Không tìm thấy Sprinkler");
+                        }
+                    }
+                }
+                // TRƯỜNG HỢP 2: Pap → Fitting (trực tiếp)
+                else if (fitting != null)
+                {
+                    details.Add($"TH2: Fitting ({fitting.Id})");
+                    LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 2: Align Fitting {fitting.Id} trực tiếp với Pap");
+
+                    // Luôn align Fitting với Pap
+                    bool success = AlignMoveConnectWithPap(doc, pap, fitting);
+                    if (success)
+                    {
+                        alignedCount++;
+                        details.Add("✓ Fitting aligned");
+                        LogHelper.Log("[ALIGN_CHAIN] ✓ Fitting đã được align");
+                    }
+                    else
+                    {
+                        details.Add("✗ Fitting align failed");
+                        LogHelper.Log("[ALIGN_CHAIN] ✗ Không thể align Fitting");
+                    }
+                    
+                    // Align sprinkler với fitting (nếu có)
+                    if (sprinkler != null)
+                    {
+                        LogHelper.Log($"[ALIGN_CHAIN] Align Sprinkler {sprinkler.Id} với Fitting");
+                        // Luôn align sprinkler với fitting
+                        bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
+                        if (success)
+                        {
+                            alignedCount++;
+                            details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
+                            LogHelper.Log("[ALIGN_CHAIN] ✓ Sprinkler đã được align với Fitting");
+                        }
+                        else
+                        {
+                            details.Add("✗ Sprinkler align failed");
+                            LogHelper.Log("[ALIGN_CHAIN] ✗ Không thể align Sprinkler với Fitting");
                         }
                     }
                     else
