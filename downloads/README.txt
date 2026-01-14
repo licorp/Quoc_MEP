@@ -1,13 +1,22 @@
 # Quoc MEP Add-in - Universal Installation
 
-Built on: 2026-01-09
+Built on: 2026-01-14
+
+## ⚠️ QUAN TRỌNG: Unblock DLL Files trước khi cài đặt!
+
+Nếu bạn download file ZIP từ internet, Windows sẽ block các DLL file.
+Chạy **UNBLOCK_FILES.bat** trước hoặc cài đặt sẽ tự động unblock.
+
+Hoặc unblock thủ công:
+- Chuột phải vào file ZIP → Properties → Check "Unblock" → OK
+- Sau đó extract lại
 
 ## 🚀 Cài đặt đơn giản - Chỉ 2 bước!
 
 ### Bước 1: Chạy INSTALL.bat
 - Double-click file **INSTALL.bat**
 - Chọn phiên bản Revit của bạn (1-7) hoặc chọn 8 để cài tất cả
-- Script sẽ tự động copy files vào đúng thư mục
+- Script sẽ tự động unblock và copy files vào đúng thư mục
 
 ### Bước 2: Restart Revit
 Khởi động lại Revit và tận hưởng!

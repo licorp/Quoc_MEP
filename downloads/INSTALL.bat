@@ -5,6 +5,12 @@ echo   Quoc MEP Universal Installer
 echo ================================================
 echo.
 
+REM Unblock DLL files to prevent CAS policy errors
+echo Dang unblock cac file DLL...
+powershell -Command "Get-ChildItem -Path '%~dp0' -Filter '*.dll' -Recurse | Unblock-File" 2>nul
+powershell -Command "Get-ChildItem -Path '%~dp0' -Filter '*.addin' -Recurse | Unblock-File" 2>nul
+echo.
+
 set "ADDIN_PATH=%APPDATA%\Autodesk\Revit\Addins"
 
 echo Chon phien ban Revit cua ban:

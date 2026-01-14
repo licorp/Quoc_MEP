@@ -1144,26 +1144,69 @@ namespace Quoc_MEP
 
                 // Lấy connector hướng xuống của Pap
                 Connector papDownConnector = GetDownwardConnector(pap);
-                if (papDownConnector == null || !papDownConnector.IsConnected)
+                if (papDownConnector == null)
                 {
-                    Debug.WriteLine("[FIND_CHAIN] Pap không có connector hướng xuống hoặc chưa kết nối");
+                    Debug.WriteLine("[FIND_CHAIN] Pap không có connector hướng xuống");
                     return (null, null, null);
                 }
 
-                // Tìm element kết nối trực tiếp với Pap
+                Debug.WriteLine($"[FIND_CHAIN] Connector Pap IsConnected: {papDownConnector.IsConnected}");
+
+                // Tìm element kết nối trực tiếp với Pap (nếu đang connected)
                 Element connectedToPap = null;
-                foreach (Connector c in papDownConnector.AllRefs)
+                if (papDownConnector.IsConnected)
                 {
-                    if (c.Owner.Id != pap.Id)
+                    foreach (Connector c in papDownConnector.AllRefs)
                     {
-                        connectedToPap = c.Owner;
-                        break;
+                        if (c.Owner.Id != pap.Id)
+                        {
+                            connectedToPap = c.Owner;
+                            break;
+                        }
+                    }
+                }
+
+                // Nếu không connected, tìm theo khoảng cách
+                if (connectedToPap == null)
+                {
+                    Debug.WriteLine("[FIND_CHAIN] Connector không connected, tìm theo khoảng cách (5mm)");
+                    XYZ papConnPos = papDownConnector.Origin;
+                    double searchRadius = 5.0 / 304.8; // 5mm
+                    
+                    // Tìm pipe/fitting gần connector
+                    List<Element> nearElements = Find40mmElementsNearPap(doc, pap, searchRadius);
+                    
+                    if (nearElements.Count > 0)
+                    {
+                        // Tìm element gần connector nhất
+                        double minDist = double.MaxValue;
+                        foreach (var elem in nearElements)
+                        {
+                            ConnectorManager cm = GetConnectorManager(elem);
+                            if (cm != null)
+                            {
+                                foreach (Connector conn in cm.Connectors)
+                                {
+                                    double dist = conn.Origin.DistanceTo(papConnPos);
+                                    if (dist < minDist)
+                                    {
+                                        minDist = dist;
+                                        connectedToPap = elem;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (connectedToPap != null)
+                        {
+                            Debug.WriteLine($"[FIND_CHAIN] Tìm thấy element gần nhất: {connectedToPap.Id} (khoảng cách: {minDist * 304.8:F1}mm)");
+                        }
                     }
                 }
 
                 if (connectedToPap == null)
                 {
-                    Debug.WriteLine("[FIND_CHAIN] Không tìm thấy element kết nối với Pap");
+                    Debug.WriteLine("[FIND_CHAIN] Không tìm thấy element kết nối với Pap (cả connected và khoảng cách)");
                     return (null, null, null);
                 }
 
