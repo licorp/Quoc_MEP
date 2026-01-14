@@ -1365,6 +1365,10 @@ namespace Quoc_MEP
                 {
                     LogHelper.Log($"[FIND_SPRINKLER] Tìm thấy sprinkler {nearestSprinkler.Id} (khoảng cách: {minDistance * 304.8:F0}mm)");
                 }
+                else
+                {
+                    LogHelper.Log($"[FIND_SPRINKLER] Không tìm thấy sprinkler nào trong bán kính {searchRadius * 304.8:F0}mm");
+                }
 
                 return nearestSprinkler;
             }
@@ -1687,11 +1691,21 @@ namespace Quoc_MEP
                                     details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
                                     LogHelper.Log("[ALIGN_CHAIN] ✓ Sprinkler đã được align với Fitting");
                                 }
+                                else
+                                {
+                                    details.Add("✗ Sprinkler align failed");
+                                    LogHelper.Log("[ALIGN_CHAIN] ✗ Không thể align Sprinkler với Fitting");
+                                }
                             }
                             else
                             {
                                 details.Add($"Sprinkler ({sprinkler.Id}) đã align");
                             }
+                        }
+                        else
+                        {
+                            LogHelper.Log("[ALIGN_CHAIN] ⚠ TH1: Không tìm thấy Sprinkler gần Fitting");
+                            details.Add("⚠ Không tìm thấy Sprinkler");
                         }
                     }
                 }
@@ -1731,11 +1745,21 @@ namespace Quoc_MEP
                                 details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
                                 LogHelper.Log("[ALIGN_CHAIN] ✓ Sprinkler đã được align với Fitting");
                             }
+                            else
+                            {
+                                details.Add("✗ Sprinkler align failed");
+                                LogHelper.Log("[ALIGN_CHAIN] ✗ Không thể align Sprinkler với Fitting");
+                            }
                         }
                         else
                         {
                             details.Add($"Sprinkler ({sprinkler.Id}) đã align");
                         }
+                    }
+                    else
+                    {
+                        LogHelper.Log("[ALIGN_CHAIN] ⚠ TH2: Không tìm thấy Sprinkler gần Fitting");
+                        details.Add("⚠ Không tìm thấy Sprinkler");
                     }
                 }
 
