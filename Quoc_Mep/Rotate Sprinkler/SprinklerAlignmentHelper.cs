@@ -1286,7 +1286,7 @@ namespace Quoc_MEP
         }
 
         /// <summary>
-        /// Tìm sprinkler kết nối với element
+        /// Tìm sprinkler kết nối với element (qua connector)
         /// </summary>
         private static Element FindSprinklerConnectedTo(Element element)
         {
@@ -1319,6 +1319,60 @@ namespace Quoc_MEP
             }
             catch { }
             return null;
+        }
+
+        /// <summary>
+        /// Tìm sprinkler gần element theo khoảng cách
+        /// </summary>
+        private static Element FindSprinklerNearElement(Document doc, Element element, double searchRadius = 3.0)
+        {
+            try
+            {
+                XYZ elemLocation = GetElementLocation(element);
+                if (elemLocation == null) return null;
+
+                LogHelper.Log($"[FIND_SPRINKLER] Tìm sprinkler gần element {element.Id} (bán kính: {searchRadius * 304.8:F0}mm)");
+
+                // Tạo bounding box
+                XYZ minPoint = elemLocation - new XYZ(searchRadius, searchRadius, searchRadius);
+                XYZ maxPoint = elemLocation + new XYZ(searchRadius, searchRadius, searchRadius);
+                Outline outline = new Outline(minPoint, maxPoint);
+                BoundingBoxIntersectsFilter bbFilter = new BoundingBoxIntersectsFilter(outline);
+
+                // Tìm sprinklers
+                var sprinklerCollector = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_Sprinklers)
+                    .WherePasses(bbFilter);
+
+                Element nearestSprinkler = null;
+                double minDistance = double.MaxValue;
+
+                foreach (Element spr in sprinklerCollector)
+                {
+                    XYZ sprLocation = GetElementLocation(spr);
+                    if (sprLocation != null)
+                    {
+                        double dist = sprLocation.DistanceTo(elemLocation);
+                        if (dist <= searchRadius && dist < minDistance)
+                        {
+                            minDistance = dist;
+                            nearestSprinkler = spr;
+                        }
+                    }
+                }
+
+                if (nearestSprinkler != null)
+                {
+                    LogHelper.Log($"[FIND_SPRINKLER] Tìm thấy sprinkler {nearestSprinkler.Id} (khoảng cách: {minDistance * 304.8:F0}mm)");
+                }
+
+                return nearestSprinkler;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Log($"[FIND_SPRINKLER] Lỗi: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
@@ -1551,6 +1605,21 @@ namespace Quoc_MEP
                                 LogHelper.Log($"[ALIGN_CHAIN] Chọn Fitting 40mm gần nhất: {fitting.Id}");
                             }
                         }
+                        
+                        // Tìm sprinkler gần fitting nếu có fitting
+                        if (fitting != null && sprinkler == null)
+                        {
+                            sprinkler = FindSprinklerNearElement(doc, fitting, searchRadius: 3.0);
+                            if (sprinkler != null)
+                            {
+                                LogHelper.Log($"[ALIGN_CHAIN] Tìm thấy Sprinkler gần Fitting: {sprinkler.Id}");
+                            }
+                        }
+                    }
+                }
+                                LogHelper.Log($"[ALIGN_CHAIN] Chọn Fitting 40mm gần nhất: {fitting.Id}");
+                            }
+                        }
                     }
                 }
 
@@ -1604,6 +1673,27 @@ namespace Quoc_MEP
                         {
                             details.Add("Fitting đã align");
                         }
+                        
+                        // Align sprinkler với fitting (nếu có)
+                        if (sprinkler != null)
+                        {
+                            LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Sprinkler {sprinkler.Id}");
+                            bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 3.0 / 304.8);
+                            if (!sprinklerAligned)
+                            {
+                                bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
+                                if (success)
+                                {
+                                    alignedCount++;
+                                    details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
+                                    LogHelper.Log("[ALIGN_CHAIN] ✓ Sprinkler đã được align với Fitting");
+                                }
+                            }
+                            else
+                            {
+                                details.Add($"Sprinkler ({sprinkler.Id}) đã align");
+                            }
+                        }
                     }
                 }
                 // TRƯỜNG HỢP 2: Pap → Fitting (trực tiếp)
@@ -1627,11 +1717,27 @@ namespace Quoc_MEP
                     {
                         details.Add("Fitting đã align");
                     }
-                }
-
-                if (sprinkler != null)
-                {
-                    details.Add($"Sprinkler: {sprinkler.Id}");
+                    
+                    // Align sprinkler với fitting (nếu có)
+                    if (sprinkler != null)
+                    {
+                        LogHelper.Log($"[ALIGN_CHAIN] Kiểm tra Sprinkler {sprinkler.Id}");
+                        bool sprinklerAligned = IsAligned3D(fitting, sprinkler, tolerance: 3.0 / 304.8);
+                        if (!sprinklerAligned)
+                        {
+                            bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
+                            if (success)
+                            {
+                                alignedCount++;
+                                details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
+                                LogHelper.Log("[ALIGN_CHAIN] ✓ Sprinkler đã được align với Fitting");
+                            }
+                        }
+                        else
+                        {
+                            details.Add($"Sprinkler ({sprinkler.Id}) đã align");
+                        }
+                    }
                 }
 
                 LogHelper.Log($"[ALIGN_CHAIN] === Hoàn thành: {alignedCount} element aligned ===");
