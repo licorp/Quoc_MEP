@@ -1640,8 +1640,8 @@ namespace Quoc_MEP
                     LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 1: Align Pipe 40mm {pipe40.Id}");
 
                     // Luôn align Pipe40 với Pap
-                    bool success = AlignMoveConnectWithPap(doc, pap, pipe40);
-                    if (success)
+                    bool successPipe = AlignMoveConnectWithPap(doc, pap, pipe40);
+                    if (successPipe)
                     {
                         alignedCount++;
                         details.Add("✓ Pipe40 aligned");
@@ -1658,8 +1658,8 @@ namespace Quoc_MEP
                     {
                         LogHelper.Log($"[ALIGN_CHAIN] Align Fitting {fitting.Id} với Pipe40");
                         // Luôn align fitting với pipe 40mm
-                        bool success = AlignMoveConnectWithPap(doc, pipe40, fitting);
-                        if (success)
+                        bool successFitting = AlignMoveConnectWithPap(doc, pipe40, fitting);
+                        if (successFitting)
                         {
                             alignedCount++;
                             details.Add($"✓ Fitting ({fitting.Id}) aligned");
@@ -1676,8 +1676,8 @@ namespace Quoc_MEP
                         {
                             LogHelper.Log($"[ALIGN_CHAIN] Align Sprinkler {sprinkler.Id} với Fitting");
                             // Luôn align sprinkler với fitting
-                            bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
-                            if (success)
+                            bool successSprinkler = AlignMoveConnectWithPap(doc, fitting, sprinkler);
+                            if (successSprinkler)
                             {
                                 alignedCount++;
                                 details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
@@ -1703,8 +1703,8 @@ namespace Quoc_MEP
                     LogHelper.Log($"[ALIGN_CHAIN] Trường hợp 2: Align Fitting {fitting.Id} trực tiếp với Pap");
 
                     // Luôn align Fitting với Pap
-                    bool success = AlignMoveConnectWithPap(doc, pap, fitting);
-                    if (success)
+                    bool successFitting = AlignMoveConnectWithPap(doc, pap, fitting);
+                    if (successFitting)
                     {
                         alignedCount++;
                         details.Add("✓ Fitting aligned");
@@ -1721,8 +1721,8 @@ namespace Quoc_MEP
                     {
                         LogHelper.Log($"[ALIGN_CHAIN] Align Sprinkler {sprinkler.Id} với Fitting");
                         // Luôn align sprinkler với fitting
-                        bool success = AlignMoveConnectWithPap(doc, fitting, sprinkler);
-                        if (success)
+                        bool successSprinkler = AlignMoveConnectWithPap(doc, fitting, sprinkler);
+                        if (successSprinkler)
                         {
                             alignedCount++;
                             details.Add($"✓ Sprinkler ({sprinkler.Id}) aligned");
