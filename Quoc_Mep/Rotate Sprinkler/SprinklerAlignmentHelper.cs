@@ -1617,11 +1617,6 @@ namespace Quoc_MEP
                         }
                     }
                 }
-                                LogHelper.Log($"[ALIGN_CHAIN] Chọn Fitting 40mm gần nhất: {fitting.Id}");
-                            }
-                        }
-                    }
-                }
 
                 if (pipe40 == null && fitting == null)
                 {
